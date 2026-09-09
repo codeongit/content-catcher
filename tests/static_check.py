@@ -23,11 +23,15 @@ def main():
     html = (EXTENSION / "popup.html").read_text()
     assert 'src="popup.js"' in html
     assert 'href="popup.css"' in html
+    assert 'id="copyForAi"' in html
+    assert 'id="readiness"' in html
 
     popup = (EXTENSION / "popup.js").read_text()
     assert "chrome.scripting.executeScript" in popup
     assert "chrome.downloads.download" in popup
     assert 'files: ["extractor.js"]' in popup
+    assert "copyForAi" in popup
+    assert "renderReadiness" in popup
 
     extractor = (EXTENSION / "extractor.js").read_text()
     for marker in [
@@ -43,6 +47,7 @@ def main():
         "schemaVersion: 2",
         "lengthPreservingPlaceholder",
         "selection:",
+        "assessAnalysisReadiness",
     ]:
         assert marker in extractor, f"Missing extractor capability: {marker}"
 
@@ -59,9 +64,13 @@ def main():
         ROOT / "docs/decisions/0004-redacted-diagnostics-and-synthetic-fixtures.md",
         ROOT / "docs/decisions/0005-regression-first-maintenance.md",
         ROOT / "docs/decisions/0006-semantic-selection-and-conservative-cleanup.md",
+        ROOT / "docs/decisions/0007-advisory-analysis-readiness.md",
         ROOT / "tests/extractor.test.mjs",
         ROOT / "tests/fixtures/wechat-article.html",
         ROOT / "tests/fixtures/generic-article.html",
+        ROOT / "tests/fixtures/short-article.html",
+        ROOT / "tests/fixtures/body-fallback.html",
+        ROOT / "tests/fixtures/large-cleanup.html",
     ]:
         assert path.is_file(), f"Missing regression asset: {path.relative_to(ROOT)}"
 

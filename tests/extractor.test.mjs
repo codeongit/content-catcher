@@ -26,6 +26,8 @@ test("WeChat adapter separates metadata, promotes headings and removes trailing 
   assert.doesNotMatch(result.article.markdown, /页面导航不应进入正文/);
   assert.doesNotMatch(result.article.markdown, /扫描下方二维码/);
   assert.doesNotMatch(result.article.markdown, /推广二维码/);
+  assert.equal(result.article.analysisReadiness.status, "ready");
+  assert.equal(result.article.analysisReadiness.issues.length, 0);
 });
 
 test("Generic scoring prefers article content over navigation and sidebar", async () => {
@@ -38,6 +40,33 @@ test("Generic scoring prefers article content over navigation and sidebar", asyn
   assert.equal(result.article.diagnostic.selection.strategy, "semantic-article");
   assert.equal(result.article.diagnostic.selection.selector, "article");
   assert.equal(result.article.diagnostic.selection.candidates[0].selected, true);
+  assert.equal(result.article.analysisReadiness.status, "ready");
+});
+
+test("Analysis readiness only flags short content when semantic extraction is otherwise clear", async () => {
+  const result = await runFixture("short-article.html", "https://example.com/short");
+  assert.equal(result.ok, true);
+  assert.equal(result.article.diagnostic.selection.strategy, "semantic-article");
+  assert.equal(result.article.analysisReadiness.status, "review");
+  assert.equal(result.article.analysisReadiness.issues.map((issue) => issue.code).join(","), "short-content");
+});
+
+test("Analysis readiness warns when the parser falls back to the whole page", async () => {
+  const result = await runFixture("body-fallback.html", "https://example.com/fallback");
+  assert.equal(result.ok, true);
+  assert.equal(result.article.diagnostic.selection.strategy, "document-body-fallback");
+  assert.equal(result.article.analysisReadiness.status, "review");
+  assert.equal(result.article.analysisReadiness.issues.map((issue) => issue.code).join(","), "body-fallback");
+});
+
+test("Analysis readiness warns only on substantial cleanup loss", async () => {
+  const result = await runFixture("large-cleanup.html", "https://example.com/cleanup");
+  assert.equal(result.ok, true);
+  assert.equal(result.article.diagnostic.selection.strategy, "semantic-article");
+  assert.ok(result.article.diagnostic.content.cleanup.removedTextLength > 1000);
+  assert.equal(result.article.analysisReadiness.status, "review");
+  assert.equal(result.article.analysisReadiness.issues.map((issue) => issue.code).join(","), "large-cleanup");
+  assert.equal(result.article.diagnostic.analysisReadiness.status, "review");
 });
 
 test("Diagnostic sample removes article text and remote URLs", async () => {

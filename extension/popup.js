@@ -15,6 +15,39 @@ function render() {
   if (article) $("#preview").value = activeView === "markdown" ? article.markdown : article.text;
 }
 
+function renderReadiness() {
+  const readiness = article?.analysisReadiness || { status: "ready", issues: [] };
+  const needsReview = readiness.status === "review";
+  $("#readiness").classList.toggle("ready", !needsReview);
+  $("#readiness").classList.toggle("review", needsReview);
+  $("#readinessIcon").textContent = needsReview ? "!" : "✓";
+  $("#readinessTitle").textContent = needsReview ? "建议确认后分析" : "可直接分析";
+  const list = $("#readinessIssues");
+  list.replaceChildren(...readiness.issues.map((issue) => {
+    const item = document.createElement("li");
+    item.textContent = issue.message;
+    return item;
+  }));
+  list.classList.toggle("hidden", !readiness.issues.length);
+}
+
+function modelInput() {
+  const hints = (article?.analysisReadiness?.issues || []).map((issue) => `抓取提示：${issue.modelHint}`);
+  return [
+    "请仅基于以下抓取内容进行总结和分析。",
+    "若内容不完整或证据不足，请明确说明限制，不要猜测缺失内容。",
+    "请提炼核心观点、关键依据和重要结论。",
+    ...hints,
+    "",
+    article.markdown
+  ].join("\n");
+}
+
+function showCopied(button, idleLabel) {
+  button.textContent = "已复制";
+  setTimeout(() => { button.textContent = idleLabel; }, 1200);
+}
+
 async function extract() {
   show("loading");
   try {
@@ -31,6 +64,7 @@ async function extract() {
     $("#source").href = article.url;
     document.querySelectorAll(".tab").forEach((node) => node.classList.toggle("active", node.dataset.view === activeView));
     render();
+    renderReadiness();
     show("result");
   } catch (error) {
     $("#errorMessage").textContent = error?.message || String(error);
@@ -48,8 +82,12 @@ document.querySelectorAll(".tab").forEach((node) => node.addEventListener("click
 }));
 $("#copy").addEventListener("click", async () => {
   await navigator.clipboard.writeText($("#preview").value);
-  $("#copy").textContent = "已复制";
-  setTimeout(() => { $("#copy").textContent = "复制"; }, 1200);
+  showCopied($("#copy"), "复制");
+});
+$("#copyForAi").addEventListener("click", async () => {
+  if (!article) return;
+  await navigator.clipboard.writeText(modelInput());
+  showCopied($("#copyForAi"), "复制给模型");
 });
 $("#download").addEventListener("click", async () => {
   if (!article) return;

@@ -34,6 +34,10 @@
           <div class="metaLine"><span id="author"></span><span id="stats"></span></div>
           <a id="source" target="_blank" rel="noreferrer">打开原网页</a>
         </div>
+        <div id="readiness" class="readiness ready" role="status">
+          <div class="readinessHeading"><span id="readinessIcon">✓</span><strong id="readinessTitle">可直接分析</strong></div>
+          <ul id="readinessIssues" class="hidden"></ul>
+        </div>
         <div class="tabs">
           <button class="tab active" data-view="markdown">Markdown</button>
           <button class="tab" data-view="text">纯文本</button>
@@ -41,7 +45,8 @@
         <textarea id="preview" spellcheck="false" aria-label="内容预览"></textarea>
         <div class="actions">
           <button id="copy" class="secondary">复制</button>
-          <button id="download" class="primary">下载 .md</button>
+          <button id="copyForAi" class="primary">复制给模型</button>
+          <button id="download" class="secondary">下载 .md</button>
         </div>
         <div class="linkActions">
           <button id="again" class="link">重新抓取</button>

@@ -18,8 +18,8 @@
 | [0004](0004-redacted-diagnostics-and-synthetic-fixtures.md) | 诊断样本脱敏，测试只使用最小合成 fixture |
 | [0005](0005-regression-first-maintenance.md) | 解析问题采用回归优先的维护方式 |
 | [0006](0006-semantic-selection-and-conservative-cleanup.md) | 正文选择语义优先，清洗规则保持保守和受限 |
+| [0007](0007-advisory-analysis-readiness.md) | 使用少量通用指标提供非阻断的模型分析提示 |
 
 ## 新增或修改决策
 
 新增决策时复制现有 ADR 的结构，使用下一个四位编号。已经实施的决策不要直接改写历史；如果方向改变，新建 ADR 并在旧 ADR 中标注 `Superseded by`。
-

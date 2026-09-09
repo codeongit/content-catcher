@@ -191,6 +191,33 @@
     };
   }
 
+  function assessAnalysisReadiness(selection, before, after) {
+    const issues = [];
+    if (after.textLength < 300) {
+      issues.push({
+        code: "short-content",
+        message: `正文仅 ${after.textLength} 字，若原页面明显更长，请等待内容加载后重新抓取。`,
+        modelHint: "抓取内容较短，分析时请明确说明证据不足，不要补全缺失内容。"
+      });
+    }
+    if (selection.strategy === "document-body-fallback") {
+      issues.push({
+        code: "body-fallback",
+        message: "页面没有明确的正文区域，内容可能混入导航或推荐。",
+        modelHint: "正文来自页面整体回退，分析时请留意可能混入的非正文内容。"
+      });
+    }
+    const removedTextLength = Math.max(0, before.textLength - after.textLength);
+    if (removedTextLength > 1000 && removedTextLength / Math.max(1, before.textLength) > 0.5) {
+      issues.push({
+        code: "large-cleanup",
+        message: "清理阶段移除了较多文字，建议检查正文开头和结尾是否完整。",
+        modelHint: "清理阶段移除了较多内容，分析结论应以当前可见正文为限。"
+      });
+    }
+    return { status: issues.length ? "review" : "ready", issues: issues.slice(0, 2) };
+  }
+
   function matchedMetadataSelector(selectors, attribute = "content") {
     for (const selector of selectors) {
       const node = document.querySelector(selector);
@@ -261,8 +288,8 @@
     while ((node = walker.nextNode())) {
       redactTextNode(node);
     }
-    const before = contentMetrics(root);
-    const after = contentMetrics(context.cleanedContent);
+    const before = context.beforeMetrics;
+    const after = context.afterMetrics;
     return {
       schemaVersion: 2,
       extensionVersion: chrome?.runtime?.getManifest?.().version || "unknown",
@@ -283,6 +310,7 @@
         publishTime: Boolean(document.querySelector("#publish_time, time"))
       },
       metadata: context.metadata,
+      analysisReadiness: context.analysisReadiness,
       content: {
         beforeCleanup: before,
         afterCleanup: after,
@@ -378,6 +406,9 @@
     const content = clean(rawContent);
     const text = normalized(content);
     if (text.length < 120) return { ok: false, error: "页面正文太短，可能不是文章页面或内容尚未加载。" };
+    const beforeMetrics = contentMetrics(rawContent);
+    const afterMetrics = contentMetrics(content);
+    const analysisReadiness = assessAnalysisReadiness(selection, beforeMetrics, afterMetrics);
     const title = meta(["#activity-name", ".rich_media_title", 'meta[property="og:title"]', 'meta[name="twitter:title"]', "h1"]) || structured.headline || document.title;
     const authorValue = structured.author;
     const structuredAuthor = Array.isArray(authorValue) ? authorValue.map((item) => item?.name || item).filter(Boolean).join(", ") : authorValue?.name || authorValue || "";
@@ -387,7 +418,9 @@
     const siteName = meta(['meta[property="og:site_name"]']) || location.hostname;
     const diagnostic = diagnosticSnapshot(rawContent, adapter, {
       selection,
-      cleanedContent: content,
+      beforeMetrics,
+      afterMetrics,
+      analysisReadiness,
       metadata: {
         fields: {
           title: diagnosticMetadataField(title, matchedMetadataSelector(["#activity-name", ".rich_media_title", 'meta[property="og:title"]', 'meta[name="twitter:title"]', "h1"]) || (structured.headline ? "json-ld" : "document.title")),
@@ -405,7 +438,7 @@
     body = body.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i"), "");
     const capturedAt = new Date().toISOString();
     const frontMatter = ["---", `title: ${JSON.stringify(title || "未命名文章")}`, author ? `author: ${JSON.stringify(author)}` : "", account && account !== author ? `account: ${JSON.stringify(account)}` : "", publishedAt ? `published: ${JSON.stringify(publishedAt)}` : "", `source: ${JSON.stringify(location.href)}`, `site: ${JSON.stringify(siteName)}`, `captured: ${JSON.stringify(capturedAt)}`, "---"].filter(Boolean).join("\n");
-    return { ok: true, article: { title, author, account, publishedAt, siteName, url: location.href, text, markdown: `${frontMatter}\n\n# ${title || "未命名文章"}\n\n${body}\n`, characterCount: text.length, imageCount: content.querySelectorAll("img").length, capturedAt, diagnostic } };
+    return { ok: true, article: { title, author, account, publishedAt, siteName, url: location.href, text, markdown: `${frontMatter}\n\n# ${title || "未命名文章"}\n\n${body}\n`, characterCount: text.length, imageCount: content.querySelectorAll("img").length, capturedAt, analysisReadiness, diagnostic } };
   } catch (error) {
     return { ok: false, error: error?.message || String(error) };
   }
