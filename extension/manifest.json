@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "Content Catcher",
+  "version": "0.1.0",
+  "description": "抓取当前网页正文并导出为 Markdown。",
+  "permissions": ["activeTab", "scripting", "downloads"],
+  "action": {
+    "default_title": "抓取当前页面",
+    "default_popup": "popup.html"
+  }
+}
+

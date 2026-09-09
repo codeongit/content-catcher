@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Content Catcher</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app">
+      <header>
+        <div><small>CONTENT CATCHER</small><h1>抓取当前页面</h1></div>
+        <span class="badge">本地处理</span>
+      </header>
+
+      <section id="idle" class="card centered">
+        <div class="icon">↳</div>
+        <p>自动识别正文、标题、作者和图片，并转换为 Markdown。</p>
+        <button id="extract" class="primary">开始抓取</button>
+      </section>
+
+      <section id="loading" class="card centered hidden" aria-live="polite">
+        <span class="spinner"></span><p>正在分析页面结构…</p>
+      </section>
+
+      <section id="error" class="card centered hidden" aria-live="assertive">
+        <strong>抓取失败</strong><p id="errorMessage"></p>
+        <button id="retry" class="secondary">重试</button>
+      </section>
+
+      <section id="result" class="hidden">
+        <div class="card meta">
+          <h2 id="title"></h2>
+          <div class="metaLine"><span id="author"></span><span id="stats"></span></div>
+          <a id="source" target="_blank" rel="noreferrer">打开原网页</a>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-view="markdown">Markdown</button>
+          <button class="tab" data-view="text">纯文本</button>
+        </div>
+        <textarea id="preview" spellcheck="false" aria-label="内容预览"></textarea>
+        <div class="actions">
+          <button id="copy" class="secondary">复制</button>
+          <button id="download" class="primary">下载 .md</button>
+        </div>
+        <button id="again" class="link">重新抓取当前页面</button>
+      </section>
+      <footer>页面内容不会上传到服务器</footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
+
