@@ -4,6 +4,7 @@
   const NEGATIVE = /ad-|ads|aside|banner|breadcrumb|comment|cookie|footer|header|menu|nav|promo|related|share|sidebar|social|subscribe/i;
   const WECHAT_NOISE = /^(在小说阅读器读本章|去阅读|在公众号小说中沉浸阅读|阅读原文|阅读全文)$/;
   const TRAILING_PROMOTION = /(扫描下方二维码|点击阅读原文即可体验|预览时标签不可点|为Agent而生，驱动AI生产力)/i;
+  const DIAGNOSTIC_TEXT_KIND = "data-cc-text-kind";
 
   const SITE_ADAPTERS = [
     {
@@ -45,12 +46,11 @@
     return {};
   }
 
-  function score(node) {
+  function scoreMetrics(node) {
     const text = normalized(node);
-    if (text.length < 120) return -Infinity;
     const links = [...node.querySelectorAll("a")].reduce((sum, item) => sum + normalized(item).length, 0);
     const identity = `${node.id || ""} ${node.className || ""}`;
-    return Math.min(text.length, 20000) / 80
+    const value = text.length < 120 ? -Infinity : Math.min(text.length, 20000) / 80
       + Math.min(node.querySelectorAll("p").length, 40) * 10
       + Math.min(node.querySelectorAll("h1,h2,h3,h4").length, 12) * 3
       + Math.min(node.querySelectorAll("img").length, 12) * 2
@@ -58,23 +58,70 @@
       + (POSITIVE.test(identity) ? 80 : 0)
       - (NEGATIVE.test(identity) ? 120 : 0)
       + (["ARTICLE", "MAIN"].includes(node.tagName) ? 100 : 0);
+    return {
+      textLength: text.length,
+      paragraphCount: node.querySelectorAll("p").length,
+      headingCount: node.querySelectorAll("h1,h2,h3,h4,h5,h6").length,
+      imageCount: node.querySelectorAll("img").length,
+      linkTextLength: links,
+      score: Number.isFinite(value) ? Number(value.toFixed(2)) : null
+    };
+  }
+
+  function score(node) {
+    return scoreMetrics(node).score ?? -Infinity;
+  }
+
+  function nodeDescriptor(node) {
+    const className = typeof node?.className === "string" ? node.className : "";
+    return {
+      tag: node?.tagName?.toLowerCase?.() || "unknown",
+      id: node?.id || "",
+      classes: className.split(/\s+/).filter(Boolean).slice(0, 12)
+    };
+  }
+
+  function candidateSummary(node, selected = false) {
+    return { ...nodeDescriptor(node), ...scoreMetrics(node), selected };
   }
 
   function findContentRoot() {
     const adaptedRoot = activeAdapter()?.contentRoot();
-    if (adaptedRoot) return adaptedRoot;
+    if (adaptedRoot) {
+      return {
+        node: adaptedRoot,
+        strategy: "site-adapter",
+        selector: adaptedRoot.id ? `#${adaptedRoot.id}` : ".rich_media_content",
+        candidates: [candidateSummary(adaptedRoot, true)]
+      };
+    }
     const semanticArticles = [...document.querySelectorAll("article,[itemprop='articleBody']")]
       .filter((node) => normalized(node).length >= 120)
       .map((node) => ({ node, value: score(node) }))
       .sort((a, b) => b.value - a.value);
-    if (semanticArticles.length) return semanticArticles[0].node;
+    if (semanticArticles.length) {
+      const selected = semanticArticles[0].node;
+      return {
+        node: selected,
+        strategy: "semantic-article",
+        selector: selected.matches("article") ? "article" : "[itemprop='articleBody']",
+        candidates: semanticArticles.slice(0, 5).map(({ node }) => candidateSummary(node, node === selected))
+      };
+    }
     const selectors = ["#js_content", ".rich_media_content", "article", "main article", "[role='main']", "main", "[itemprop='articleBody']", ".post-content", ".entry-content", ".article-content", ".article-body", ".story-body"];
     const candidates = new Set();
     selectors.forEach((selector) => document.querySelectorAll(selector).forEach((node) => candidates.add(node)));
     document.querySelectorAll("section,div").forEach((node) => {
       if (node.children.length && normalized(node).length > 500) candidates.add(node);
     });
-    return [...candidates].map((node) => ({ node, value: score(node) })).sort((a, b) => b.value - a.value)[0]?.node || document.body;
+    const ranked = [...candidates].map((node) => ({ node, value: score(node) })).sort((a, b) => b.value - a.value);
+    const selected = ranked[0]?.node || document.body;
+    return {
+      node: selected,
+      strategy: ranked.length ? "scored-candidate" : "document-body-fallback",
+      selector: ranked.length ? "candidate-score" : "body",
+      candidates: (ranked.length ? ranked.slice(0, 5) : [{ node: document.body }]).map(({ node }) => candidateSummary(node, node === selected))
+    };
   }
 
   function trimTrailingPromotion(root) {
@@ -85,7 +132,8 @@
     let textNode;
     while ((textNode = walker.nextNode())) {
       const value = (textNode.nodeValue || "").trim();
-      if (!TRAILING_PROMOTION.test(value)) continue;
+      const markedPromotion = textNode.parentElement?.closest?.(`[${DIAGNOSTIC_TEXT_KIND}="trailing-promotion"]`);
+      if (!TRAILING_PROMOTION.test(value) && !markedPromotion) continue;
       if (fullText.lastIndexOf(value) > fullText.length * 0.6) candidates.push(textNode);
     }
     const markerText = candidates[0];
@@ -129,16 +177,81 @@
     return clone;
   }
 
-  function diagnosticSnapshot(root, adapter) {
+  function contentMetrics(root) {
+    return {
+      elementCount: root.querySelectorAll("*").length + 1,
+      textLength: normalized(root).length,
+      paragraphCount: root.querySelectorAll("p").length,
+      headingCount: root.querySelectorAll("h1,h2,h3,h4,h5,h6").length,
+      imageCount: root.querySelectorAll("img").length,
+      linkCount: root.querySelectorAll("a").length,
+      listCount: root.querySelectorAll("ul,ol").length,
+      codeBlockCount: root.querySelectorAll("pre").length,
+      tableCount: root.querySelectorAll("table").length
+    };
+  }
+
+  function matchedMetadataSelector(selectors, attribute = "content") {
+    for (const selector of selectors) {
+      const node = document.querySelector(selector);
+      const value = node?.getAttribute?.(attribute) || node?.textContent;
+      if (value?.trim()) return selector;
+    }
+    return "";
+  }
+
+  function diagnosticMetadataField(value, source) {
+    return { present: Boolean(value), length: value?.length || 0, source: source || "" };
+  }
+
+  function numericHeadingLevel(value, textNode) {
+    if (textNode.parentElement?.closest?.("pre,code")) return 0;
+    if (/^\d{1,2}\.\d{1,2}(?:\.|\s*)\S/.test(value)) return 3;
+    if (/^\d{1,2}\.\s*\S/.test(value)) return 2;
+    return 0;
+  }
+
+  function lengthPreservingPlaceholder(length, kind, headingLevel = 0) {
+    if (headingLevel === 3) {
+      const base = "1.1 示例标题";
+      return length >= base.length ? base + "文".repeat(length - base.length) : length >= 4 ? `1.1${"文".repeat(length - 3)}` : "文".repeat(length);
+    }
+    if (headingLevel === 2) {
+      const base = "1. 示例标题";
+      return length >= base.length ? base + "文".repeat(length - base.length) : length >= 3 ? `1.${"文".repeat(length - 2)}` : "文".repeat(length);
+    }
+    const label = kind === "trailing-promotion" ? `[尾部推广 ${length} 字]` : kind === "code" ? `[代码 ${length} 字]` : `[文本 ${length} 字]`;
+    return label.length <= length ? label + "文".repeat(length - label.length) : "文".repeat(length);
+  }
+
+  function redactTextNode(textNode) {
+    const raw = textNode.nodeValue || "";
+    const value = raw.trim();
+    if (!value) return;
+    const leading = raw.match(/^\s*/)?.[0] || "";
+    const trailing = raw.match(/\s*$/)?.[0] || "";
+    const headingLevel = numericHeadingLevel(value, textNode);
+    const kind = TRAILING_PROMOTION.test(value) ? "trailing-promotion" : textNode.parentElement?.closest?.("pre,code") ? "code" : headingLevel ? "visual-heading" : "prose";
+    textNode.nodeValue = `${leading}${lengthPreservingPlaceholder(value.length, kind, headingLevel)}${trailing}`;
+    const parent = textNode.parentElement;
+    if (parent && kind !== "prose") parent.setAttribute(DIAGNOSTIC_TEXT_KIND, kind);
+    if (parent && [...parent.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE && child.nodeValue.trim()).length === 1) {
+      parent.setAttribute("data-cc-text-length", String(value.length));
+    }
+  }
+
+  function diagnosticSnapshot(root, adapter, context) {
     const snapshot = root.cloneNode(true);
     const allowed = new Set(["id", "class", "role", "itemprop", "datetime", "alt", "href", "src", "data-src", "data-original", "data-lazy-src"]);
-    snapshot.querySelectorAll("script,style,form,input,textarea,select,button,iframe").forEach((node) => node.remove());
-    snapshot.querySelectorAll("*").forEach((node) => {
+    snapshot.querySelectorAll("script,style,noscript,template,form,input,textarea,select,button,iframe").forEach((node) => node.remove());
+    [snapshot, ...snapshot.querySelectorAll("*")].forEach((node) => {
       [...node.attributes].forEach((attribute) => {
         if (!allowed.has(attribute.name)) node.removeAttribute(attribute.name);
       });
       if (node.hasAttribute("href")) node.setAttribute("href", "https://example.invalid/link");
       if (node.hasAttribute("src")) node.setAttribute("src", "https://example.invalid/image");
+      if (node.hasAttribute("alt")) node.setAttribute("alt", "图片");
+      if (node.hasAttribute("datetime")) node.setAttribute("datetime", "2000-01-01T00:00:00Z");
       ["data-src", "data-original", "data-lazy-src"].forEach((name) => {
         if (node.hasAttribute(name)) node.setAttribute(name, "https://example.invalid/image");
       });
@@ -146,22 +259,39 @@
     const walker = document.createTreeWalker(snapshot, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
-      const value = (node.nodeValue || "").trim();
-      if (!value || TRAILING_PROMOTION.test(value)) continue;
-      const heading = value.match(/^(\d+(?:\.\d+)?\.?)(.*)$/);
-      node.nodeValue = heading ? `${heading[1]} 示例标题` : `[文本 ${value.length} 字]`;
+      redactTextNode(node);
     }
+    const before = contentMetrics(root);
+    const after = contentMetrics(context.cleanedContent);
     return {
-      schemaVersion: 1,
+      schemaVersion: 2,
       extensionVersion: chrome?.runtime?.getManifest?.().version || "unknown",
       site: adapter?.id || "generic",
       hostname: location.hostname,
       capturedAt: new Date().toISOString(),
+      scope: "selected-content-root",
+      selection: {
+        strategy: context.selection.strategy,
+        selector: context.selection.selector,
+        selected: candidateSummary(root, true),
+        candidates: context.selection.candidates
+      },
       metadataSelectors: {
         activityName: Boolean(document.querySelector("#activity-name")),
         authorName: Boolean(document.querySelector("#js_author_name, #author_name")),
         accountName: Boolean(document.querySelector("#js_name, .rich_media_meta_nickname")),
         publishTime: Boolean(document.querySelector("#publish_time, time"))
+      },
+      metadata: context.metadata,
+      content: {
+        beforeCleanup: before,
+        afterCleanup: after,
+        cleanup: {
+          removedElementCount: Math.max(0, before.elementCount - after.elementCount),
+          removedTextLength: Math.max(0, before.textLength - after.textLength),
+          trailingPromotionDetected: TRAILING_PROMOTION.test(normalized(root)),
+          siteCleanupApplied: Boolean(adapter?.cleanup)
+        }
       },
       html: snapshot.outerHTML
     };
@@ -243,8 +373,8 @@
   try {
     const adapter = activeAdapter();
     const structured = jsonLd();
-    const rawContent = findContentRoot();
-    const diagnostic = diagnosticSnapshot(rawContent, adapter);
+    const selection = findContentRoot();
+    const rawContent = selection.node;
     const content = clean(rawContent);
     const text = normalized(content);
     if (text.length < 120) return { ok: false, error: "页面正文太短，可能不是文章页面或内容尚未加载。" };
@@ -255,6 +385,22 @@
     const author = adapter?.author?.() || meta(['[rel="author"]', '[itemprop="author"]', 'meta[name="author"]', 'meta[property="article:author"]']) || structuredAuthor || account;
     const publishedAt = meta(["#publish_time", 'meta[property="article:published_time"]', 'meta[name="date"]', "time[datetime]", "time"], "datetime") || structured.datePublished || "";
     const siteName = meta(['meta[property="og:site_name"]']) || location.hostname;
+    const diagnostic = diagnosticSnapshot(rawContent, adapter, {
+      selection,
+      cleanedContent: content,
+      metadata: {
+        fields: {
+          title: diagnosticMetadataField(title, matchedMetadataSelector(["#activity-name", ".rich_media_title", 'meta[property="og:title"]', 'meta[name="twitter:title"]', "h1"]) || (structured.headline ? "json-ld" : "document.title")),
+          author: diagnosticMetadataField(author, matchedMetadataSelector(["#js_author_name", "#author_name", '[rel="author"]', '[itemprop="author"]', 'meta[name="author"]', 'meta[property="article:author"]']) || (structuredAuthor ? "json-ld" : account ? "account-fallback" : "")),
+          account: diagnosticMetadataField(account, matchedMetadataSelector(["#js_name", ".rich_media_meta_nickname"])),
+          publishedAt: diagnosticMetadataField(publishedAt, matchedMetadataSelector(["#publish_time", 'meta[property="article:published_time"]', 'meta[name="date"]', "time[datetime]", "time"], "datetime") || (structured.datePublished ? "json-ld" : "")),
+          siteName: diagnosticMetadataField(siteName, matchedMetadataSelector(['meta[property="og:site_name"]']) || "hostname")
+        },
+        relationships: {
+          authorEqualsAccount: Boolean(author && account && author === account)
+        }
+      }
+    });
     let body = promoteVisualHeadings(toMarkdown(content));
     body = body.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i"), "");
     const capturedAt = new Date().toISOString();

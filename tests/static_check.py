@@ -8,7 +8,9 @@ EXTENSION = ROOT / "extension"
 
 def main():
     manifest = json.loads((EXTENSION / "manifest.json").read_text())
+    package = json.loads((ROOT / "package.json").read_text())
     assert manifest["manifest_version"] == 3
+    assert manifest["version"] == package["version"]
     assert manifest["action"]["default_popup"] == "popup.html"
     assert set(manifest["permissions"]) == {"activeTab", "scripting", "downloads"}
 
@@ -38,6 +40,9 @@ def main():
         "account:",
         "SITE_ADAPTERS",
         "diagnosticSnapshot",
+        "schemaVersion: 2",
+        "lengthPreservingPlaceholder",
+        "selection:",
     ]:
         assert marker in extractor, f"Missing extractor capability: {marker}"
 

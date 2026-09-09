@@ -37,6 +37,8 @@ Content Catcher 版本：
 
 如果 Markdown 无法说明 DOM 问题，解析完成后点击“导出脱敏诊断样本”，附上生成的 JSON。提交前仍应人工检查诊断文件，不要提供密码、Cookie、Token、个人信息或不应公开的数据。
 
+诊断 schema v2 应满足：正文和尾部文案没有原文残留；所有远程 URL 指向 `example.invalid`；安全占位文本保持原文本长度；`selection`、`metadata` 和 `content.cleanup` 摘要存在。诊断仅包含选中的正文根节点，外围候选使用无文本的结构与评分摘要表示。
+
 ## 4. 问题分类
 
 先判断修改应该落在哪里：
@@ -106,4 +108,3 @@ make package
 - 未引入真实文章、敏感数据或不必要权限。
 - 版本与变更记录在需要时已经更新。
 - GitHub Actions 为绿色。
-
