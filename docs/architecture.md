@@ -18,6 +18,8 @@
 - `popup.*`：用户界面和扩展生命周期管理。
 - `extractor.js`：站点适配、通用正文评分、DOM 清洗和 Markdown 转换。
 
+站点差异集中在 `SITE_ADAPTERS`。适配器只定义匹配条件、正文根节点、站点元数据和额外清洗；通用评分与 Markdown 转换保持共享。
+
 ## 解析策略
 
 1. 优先尝试明确的站点或语义选择器，例如微信的 `#js_content`、`article` 和 `main`。
@@ -34,3 +36,10 @@
 - 通用启发式必须保留，避免扩展退化为站点白名单。
 - 新增清洗规则时必须避免删除正文中的合法短内容。
 - 将来接入 AI 时，通过独立 provider 接口实现，不把 API Key 写入扩展源码。
+
+## 回归机制
+
+- `tests/fixtures/` 存放人工构造、不包含真实文章版权内容的最小 HTML 样本。
+- `tests/extractor.test.mjs` 在 jsdom 中执行与扩展完全相同的 `extractor.js`。
+- GitHub Actions 在每次推送和 Pull Request 时运行通用页面、微信页面和诊断脱敏测试。
+- 真实页面出现问题时，先通过扩展导出脱敏诊断样本，再将结构压缩成人工 fixture，最后补充失败测试和修复规则。

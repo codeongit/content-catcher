@@ -36,8 +36,19 @@ def main():
         "trimTrailingPromotion",
         "promoteVisualHeadings",
         "account:",
+        "SITE_ADAPTERS",
+        "diagnosticSnapshot",
     ]:
         assert marker in extractor, f"Missing extractor capability: {marker}"
+
+    for path in [
+        ROOT / "package.json",
+        ROOT / ".github/workflows/test.yml",
+        ROOT / "tests/extractor.test.mjs",
+        ROOT / "tests/fixtures/wechat-article.html",
+        ROOT / "tests/fixtures/generic-article.html",
+    ]:
+        assert path.is_file(), f"Missing regression asset: {path.relative_to(ROOT)}"
 
     print("All static checks passed.")
 

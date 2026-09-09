@@ -57,4 +57,14 @@ $("#download").addEventListener("click", async () => {
   await chrome.downloads.download({ url, filename: `${safeFilename(article.title)}.md`, saveAs: true });
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 });
-
+$("#diagnostic").addEventListener("click", async () => {
+  if (!article?.diagnostic) return;
+  const payload = JSON.stringify(article.diagnostic, null, 2);
+  const url = URL.createObjectURL(new Blob([payload], { type: "application/json;charset=utf-8" }));
+  await chrome.downloads.download({
+    url,
+    filename: `content-catcher-diagnostic-${article.diagnostic.site}.json`,
+    saveAs: true
+  });
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+});
