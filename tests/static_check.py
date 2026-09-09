@@ -28,7 +28,15 @@ def main():
     assert 'files: ["extractor.js"]' in popup
 
     extractor = (EXTENSION / "extractor.js").read_text()
-    for marker in ["#js_content", "findContentRoot", "toMarkdown", "data-src"]:
+    for marker in [
+        "#js_content",
+        "findContentRoot",
+        "toMarkdown",
+        "data-src",
+        "trimTrailingPromotion",
+        "promoteVisualHeadings",
+        "account:",
+    ]:
         assert marker in extractor, f"Missing extractor capability: {marker}"
 
     print("All static checks passed.")
@@ -36,4 +44,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

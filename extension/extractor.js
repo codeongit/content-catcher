@@ -3,6 +3,7 @@
   const POSITIVE = /article|body|content|entry|main|page|post|story|text|正文|文章/i;
   const NEGATIVE = /ad-|ads|aside|banner|breadcrumb|comment|cookie|footer|header|menu|nav|promo|related|share|sidebar|social|subscribe/i;
   const WECHAT_NOISE = /^(在小说阅读器读本章|去阅读|在公众号小说中沉浸阅读|阅读原文|阅读全文)$/;
+  const TRAILING_PROMOTION = /(扫描下方二维码|点击阅读原文即可体验|预览时标签不可点|为Agent而生，驱动AI生产力)/i;
 
   function normalized(node) {
     return (node?.innerText || node?.textContent || "").replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
@@ -45,6 +46,12 @@
   }
 
   function findContentRoot() {
+    // 微信正文节点结构稳定且边界更准确。若参与通用评分，外层容器会因
+    // 多出作者区和推荐区而获得更高分，导致标题、作者与尾部提示混入正文。
+    if (location.hostname === "mp.weixin.qq.com") {
+      const wechatArticle = document.querySelector("#js_content") || document.querySelector(".rich_media_content");
+      if (wechatArticle) return wechatArticle;
+    }
     const selectors = ["#js_content", ".rich_media_content", "article", "main article", "[role='main']", "main", "[itemprop='articleBody']", ".post-content", ".entry-content", ".article-content", ".article-body", ".story-body"];
     const candidates = new Set();
     selectors.forEach((selector) => document.querySelectorAll(selector).forEach((node) => candidates.add(node)));
@@ -52,6 +59,22 @@
       if (node.children.length && normalized(node).length > 500) candidates.add(node);
     });
     return [...candidates].map((node) => ({ node, value: score(node) })).sort((a, b) => b.value - a.value)[0]?.node || document.body;
+  }
+
+  function trimTrailingPromotion(root) {
+    const fullText = normalized(root);
+    if (!fullText) return;
+    const candidates = [...root.querySelectorAll("p,div,section,span,strong")]
+      .map((node) => ({ node, text: normalized(node) }))
+      .filter(({ text }) => text.length > 0 && text.length < 220 && TRAILING_PROMOTION.test(text))
+      .filter(({ text }) => fullText.indexOf(text) > fullText.length * 0.6)
+      .sort((a, b) => a.text.length - b.text.length);
+    const marker = candidates[0]?.node;
+    if (!marker || !root.lastChild) return;
+    const range = document.createRange();
+    range.setStartBefore(marker);
+    range.setEndAfter(root.lastChild);
+    range.deleteContents();
   }
 
   function absolute(value) {
@@ -77,6 +100,7 @@
       const text = normalized(node);
       if ((NEGATIVE.test(`${node.id || ""} ${node.className || ""}`) && text.length < 500) || WECHAT_NOISE.test(text)) node.remove();
     });
+    if (location.hostname === "mp.weixin.qq.com") trimTrailingPromotion(clone);
     return clone;
   }
 
@@ -131,6 +155,28 @@
     return [...root.childNodes].map((node) => block(node)).join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   }
 
+  function promoteVisualHeadings(markdown) {
+    let inFence = false;
+    return markdown.split("\n").map((line) => {
+      const value = line.trim();
+      if (value.startsWith("```")) {
+        inFence = !inFence;
+        return line;
+      }
+      if (inFence || !value || value.startsWith("#")) return line;
+      if (/^(前言|序言|结语|总结|参考资料)$/.test(value)) return `## ${value}`;
+      const subheading = value.match(/^\*\*(\d{1,2}\.\d{1,2}\s*[^*]{1,90})\*\*$/);
+      if (subheading) return `### ${subheading[1].replace(/^(\d+\.\d+)(?=\S)/, "$1 ")}`;
+      if (/^\d{1,2}\.\d{1,2}(?!\d)\s*\S.{0,90}$/.test(value)) {
+        return `### ${value.replace(/^(\d+\.\d+)(?=\S)/, "$1 ")}`;
+      }
+      if (/^\d{1,2}\.(?!\d)\s*\S.{0,90}$/.test(value)) {
+        return `## ${value.replace(/^(\d+\.)(?=\S)/, "$1 ")}`;
+      }
+      return line;
+    }).join("\n");
+  }
+
   try {
     const structured = jsonLd();
     const content = clean(findContentRoot());
@@ -139,16 +185,18 @@
     const title = meta(["#activity-name", ".rich_media_title", 'meta[property="og:title"]', 'meta[name="twitter:title"]', "h1"]) || structured.headline || document.title;
     const authorValue = structured.author;
     const structuredAuthor = Array.isArray(authorValue) ? authorValue.map((item) => item?.name || item).filter(Boolean).join(", ") : authorValue?.name || authorValue || "";
-    const author = meta(["#js_name", ".rich_media_meta_nickname", 'meta[name="author"]', 'meta[property="article:author"]', '[rel="author"]', '[itemprop="author"]']) || structuredAuthor;
+    const account = location.hostname === "mp.weixin.qq.com"
+      ? meta(["#js_name", ".rich_media_meta_nickname"])
+      : "";
+    const author = meta(["#js_author_name", "#author_name", '[rel="author"]', '[itemprop="author"]', 'meta[name="author"]', 'meta[property="article:author"]']) || structuredAuthor || account;
     const publishedAt = meta(["#publish_time", 'meta[property="article:published_time"]', 'meta[name="date"]', "time[datetime]", "time"], "datetime") || structured.datePublished || "";
     const siteName = meta(['meta[property="og:site_name"]']) || location.hostname;
-    let body = toMarkdown(content);
+    let body = promoteVisualHeadings(toMarkdown(content));
     body = body.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i"), "");
     const capturedAt = new Date().toISOString();
-    const frontMatter = ["---", `title: ${JSON.stringify(title || "未命名文章")}`, author ? `author: ${JSON.stringify(author)}` : "", publishedAt ? `published: ${JSON.stringify(publishedAt)}` : "", `source: ${JSON.stringify(location.href)}`, `site: ${JSON.stringify(siteName)}`, `captured: ${JSON.stringify(capturedAt)}`, "---"].filter(Boolean).join("\n");
-    return { ok: true, article: { title, author, publishedAt, siteName, url: location.href, text, markdown: `${frontMatter}\n\n# ${title || "未命名文章"}\n\n${body}\n`, characterCount: text.length, imageCount: content.querySelectorAll("img").length, capturedAt } };
+    const frontMatter = ["---", `title: ${JSON.stringify(title || "未命名文章")}`, author ? `author: ${JSON.stringify(author)}` : "", account && account !== author ? `account: ${JSON.stringify(account)}` : "", publishedAt ? `published: ${JSON.stringify(publishedAt)}` : "", `source: ${JSON.stringify(location.href)}`, `site: ${JSON.stringify(siteName)}`, `captured: ${JSON.stringify(capturedAt)}`, "---"].filter(Boolean).join("\n");
+    return { ok: true, article: { title, author, account, publishedAt, siteName, url: location.href, text, markdown: `${frontMatter}\n\n# ${title || "未命名文章"}\n\n${body}\n`, characterCount: text.length, imageCount: content.querySelectorAll("img").length, capturedAt } };
   } catch (error) {
     return { ok: false, error: error?.message || String(error) };
   }
 })();
-
