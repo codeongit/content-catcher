@@ -63,6 +63,11 @@
   function findContentRoot() {
     const adaptedRoot = activeAdapter()?.contentRoot();
     if (adaptedRoot) return adaptedRoot;
+    const semanticArticles = [...document.querySelectorAll("article,[itemprop='articleBody']")]
+      .filter((node) => normalized(node).length >= 120)
+      .map((node) => ({ node, value: score(node) }))
+      .sort((a, b) => b.value - a.value);
+    if (semanticArticles.length) return semanticArticles[0].node;
     const selectors = ["#js_content", ".rich_media_content", "article", "main article", "[role='main']", "main", "[itemprop='articleBody']", ".post-content", ".entry-content", ".article-content", ".article-body", ".story-body"];
     const candidates = new Set();
     selectors.forEach((selector) => document.querySelectorAll(selector).forEach((node) => candidates.add(node)));
