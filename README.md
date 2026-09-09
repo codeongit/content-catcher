@@ -40,6 +40,7 @@ make package
 ```text
 content-catcher/
 ├── AGENTS.md           开发 Agent 的项目入口与约束
+├── CONTRIBUTING.md     开发、测试和提交规范
 ├── .github/workflows/  GitHub Actions 自动回归
 ├── extension/          Chrome 扩展源码
 ├── docs/               架构与维护文档
@@ -49,6 +50,13 @@ content-catcher/
 ├── Makefile
 └── README.md
 ```
+
+## 项目文档
+
+- [架构说明](docs/architecture.md)
+- [架构决策记录](docs/decisions/README.md)
+- [解析器维护手册](docs/maintenance-playbook.md)
+- [贡献指南](CONTRIBUTING.md)
 
 ## 当前边界
 

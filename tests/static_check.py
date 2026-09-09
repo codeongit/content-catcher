@@ -43,8 +43,17 @@ def main():
 
     for path in [
         ROOT / "AGENTS.md",
+        ROOT / "CONTRIBUTING.md",
         ROOT / "package.json",
         ROOT / ".github/workflows/test.yml",
+        ROOT / "docs/maintenance-playbook.md",
+        ROOT / "docs/decisions/README.md",
+        ROOT / "docs/decisions/0001-local-first-mvp.md",
+        ROOT / "docs/decisions/0002-generic-parser-with-site-adapters.md",
+        ROOT / "docs/decisions/0003-markdown-first-export.md",
+        ROOT / "docs/decisions/0004-redacted-diagnostics-and-synthetic-fixtures.md",
+        ROOT / "docs/decisions/0005-regression-first-maintenance.md",
+        ROOT / "docs/decisions/0006-semantic-selection-and-conservative-cleanup.md",
         ROOT / "tests/extractor.test.mjs",
         ROOT / "tests/fixtures/wechat-article.html",
         ROOT / "tests/fixtures/generic-article.html",
