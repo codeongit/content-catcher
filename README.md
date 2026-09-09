@@ -39,6 +39,7 @@ make package
 
 ```text
 content-catcher/
+├── AGENTS.md           开发 Agent 的项目入口与约束
 ├── .github/workflows/  GitHub Actions 自动回归
 ├── extension/          Chrome 扩展源码
 ├── docs/               架构与维护文档

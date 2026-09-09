@@ -42,6 +42,7 @@ def main():
         assert marker in extractor, f"Missing extractor capability: {marker}"
 
     for path in [
+        ROOT / "AGENTS.md",
         ROOT / "package.json",
         ROOT / ".github/workflows/test.yml",
         ROOT / "tests/extractor.test.mjs",
