@@ -25,6 +25,7 @@ def main():
     assert 'href="popup.css"' in html
     assert 'id="copyForAi"' in html
     assert 'id="readiness"' in html
+    assert html.index('class="actions"') < html.index('class="tabs"')
 
     popup = (EXTENSION / "popup.js").read_text()
     assert "chrome.scripting.executeScript" in popup
