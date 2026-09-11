@@ -19,6 +19,7 @@
 | [0005](0005-regression-first-maintenance.md) | 解析问题采用回归优先的维护方式 |
 | [0006](0006-semantic-selection-and-conservative-cleanup.md) | 正文选择语义优先，清洗规则保持保守和受限 |
 | [0007](0007-advisory-analysis-readiness.md) | 使用少量通用指标提供非阻断的模型分析提示 |
+| [0008](0008-evidence-grounded-model-handoff.md) | 使用带抓取上下文和固定证据结构的模型交接契约 |
 
 ## 新增或修改决策
 

@@ -1,10 +1,10 @@
 {
   "name": "content-catcher",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/extractor.test.mjs",
+    "test": "node --test tests/extractor.test.mjs tests/analysis-prompt.test.mjs tests/popup.test.mjs",
     "check:static": "python3 tests/static_check.py"
   },
   "devDependencies": {

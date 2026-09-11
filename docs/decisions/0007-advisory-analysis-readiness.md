@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-09
+- Extended by: [ADR-0008](0008-evidence-grounded-model-handoff.md)
 
 ## Context
 

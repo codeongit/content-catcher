@@ -27,6 +27,7 @@ button { min-height: 42px; padding: 0 17px; border: 0; border-radius: 10px; font
 .readinessHeading { display: flex; align-items: center; gap: 7px; }
 .readiness ul { margin: 7px 0 0; padding-left: 21px; }
 .readiness li + li { margin-top: 3px; }
+.readinessScope { margin: 6px 0 0; color: #687169; font-size: 11px; }
 .tabs { display: flex; gap: 4px; margin-top: 15px; padding: 4px; border-radius: 10px; background: #e8e5dd; }
 .tab { flex: 1; min-height: 34px; padding: 8px; color: #687169; background: transparent; font-size: 12px; }
 .tab.active { color: #1d3e2b; background: #fff; box-shadow: 0 2px 8px #17211b14; }

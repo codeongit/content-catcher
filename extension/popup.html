@@ -35,8 +35,9 @@
           <a id="source" target="_blank" rel="noreferrer">打开原网页</a>
         </div>
         <div id="readiness" class="readiness ready" role="status">
-          <div class="readinessHeading"><span id="readinessIcon">✓</span><strong id="readinessTitle">可直接分析</strong></div>
+          <div class="readinessHeading"><span id="readinessIcon">✓</span><strong id="readinessTitle">正文抓取正常</strong></div>
           <ul id="readinessIssues" class="hidden"></ul>
+          <p class="readinessScope">仅表示正文抽取状态；图片内容与外部来源未核验。</p>
         </div>
         <div class="actions">
           <button id="copy" class="secondary">复制</button>
@@ -55,6 +56,6 @@
       </section>
       <footer>页面内容不会上传到服务器</footer>
     </main>
-    <script src="popup.js"></script>
+    <script type="module" src="popup.js"></script>
   </body>
 </html>

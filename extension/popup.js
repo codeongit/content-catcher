@@ -1,3 +1,5 @@
+import { buildModelInput } from "./analysis-prompt.js";
+
 const $ = (selector) => document.querySelector(selector);
 const views = { idle: $("#idle"), loading: $("#loading"), error: $("#error"), result: $("#result") };
 let article = null;
@@ -21,7 +23,7 @@ function renderReadiness() {
   $("#readiness").classList.toggle("ready", !needsReview);
   $("#readiness").classList.toggle("review", needsReview);
   $("#readinessIcon").textContent = needsReview ? "!" : "✓";
-  $("#readinessTitle").textContent = needsReview ? "建议确认后分析" : "可直接分析";
+  $("#readinessTitle").textContent = needsReview ? "建议检查抓取内容" : "正文抓取正常";
   const list = $("#readinessIssues");
   list.replaceChildren(...readiness.issues.map((issue) => {
     const item = document.createElement("li");
@@ -29,18 +31,6 @@ function renderReadiness() {
     return item;
   }));
   list.classList.toggle("hidden", !readiness.issues.length);
-}
-
-function modelInput() {
-  const hints = (article?.analysisReadiness?.issues || []).map((issue) => `抓取提示：${issue.modelHint}`);
-  return [
-    "请仅基于以下抓取内容进行总结和分析。",
-    "若内容不完整或证据不足，请明确说明限制，不要猜测缺失内容。",
-    "请提炼核心观点、关键依据和重要结论。",
-    ...hints,
-    "",
-    article.markdown
-  ].join("\n");
 }
 
 function showCopied(button, idleLabel) {
@@ -86,7 +76,7 @@ $("#copy").addEventListener("click", async () => {
 });
 $("#copyForAi").addEventListener("click", async () => {
   if (!article) return;
-  await navigator.clipboard.writeText(modelInput());
+  await navigator.clipboard.writeText(buildModelInput(article));
   showCopied($("#copyForAi"), "复制给模型");
 });
 $("#download").addEventListener("click", async () => {

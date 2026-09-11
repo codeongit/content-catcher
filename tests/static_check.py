@@ -14,14 +14,14 @@ def main():
     assert manifest["action"]["default_popup"] == "popup.html"
     assert set(manifest["permissions"]) == {"activeTab", "scripting", "downloads"}
 
-    required = ["popup.html", "popup.css", "popup.js", "extractor.js"]
+    required = ["popup.html", "popup.css", "popup.js", "extractor.js", "analysis-prompt.js"]
     for filename in required:
         path = EXTENSION / filename
         assert path.is_file(), f"Missing {filename}"
         assert path.stat().st_size > 0, f"Empty {filename}"
 
     html = (EXTENSION / "popup.html").read_text()
-    assert 'src="popup.js"' in html
+    assert '<script type="module" src="popup.js"></script>' in html
     assert 'href="popup.css"' in html
     assert 'id="copyForAi"' in html
     assert 'id="readiness"' in html
@@ -33,6 +33,18 @@ def main():
     assert 'files: ["extractor.js"]' in popup
     assert "copyForAi" in popup
     assert "renderReadiness" in popup
+    assert 'from "./analysis-prompt.js"' in popup
+
+    analysis_prompt = (EXTENSION / "analysis-prompt.js").read_text()
+    for marker in [
+        'ANALYSIS_PROMPT_VERSION = "evidence-v1"',
+        "buildModelInput",
+        "<capture_context>",
+        "<captured_content>",
+        "imagePixelsTranscribed",
+        "externalLinksVerified",
+    ]:
+        assert marker in analysis_prompt, f"Missing analysis prompt capability: {marker}"
 
     extractor = (EXTENSION / "extractor.js").read_text()
     for marker in [
@@ -66,7 +78,10 @@ def main():
         ROOT / "docs/decisions/0005-regression-first-maintenance.md",
         ROOT / "docs/decisions/0006-semantic-selection-and-conservative-cleanup.md",
         ROOT / "docs/decisions/0007-advisory-analysis-readiness.md",
+        ROOT / "docs/decisions/0008-evidence-grounded-model-handoff.md",
         ROOT / "tests/extractor.test.mjs",
+        ROOT / "tests/analysis-prompt.test.mjs",
+        ROOT / "tests/popup.test.mjs",
         ROOT / "tests/fixtures/wechat-article.html",
         ROOT / "tests/fixtures/generic-article.html",
         ROOT / "tests/fixtures/short-article.html",
