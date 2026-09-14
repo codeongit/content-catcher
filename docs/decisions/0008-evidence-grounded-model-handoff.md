@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-11
 - Extends: [ADR-0007](0007-advisory-analysis-readiness.md)
+- Partially superseded by: [ADR-0009](0009-conversational-feedback.md)（2026-09-14）：五段式及条目组织改为默认格式，表格不强制；用户可调整篇幅、重点和形式。证据、推导、资料边界与限制要求继续有效。以下保留原决策正文。
 
 ## Context
 

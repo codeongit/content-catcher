@@ -37,3 +37,6 @@ git diff --check
 
 For a distributable package, also run `make package`. A pushed change is complete only after GitHub Actions succeeds.
 
+## Browser testing ownership
+
+Real-browser testing is owned by human maintainers, including extension loading/reloading, live-page extraction, popup layout, clipboard, and downloads. Agents perform offline regression tests, static checks, and packaging as needed, then provide a concise manual checklist. Do not initiate real-browser testing unless the user explicitly reassigns it. Pending human verification is a handoff item, not an agent browser-tool blocker; report it as pending until a human supplies results, and never equate jsdom or static checks with a real-browser pass.

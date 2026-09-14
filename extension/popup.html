@@ -13,6 +13,35 @@
         <span class="badge">本地处理</span>
       </header>
 
+      <details id="analysisSettings" class="analysisSettings">
+        <summary>分析设置</summary>
+        <div class="settingsFields">
+          <label for="analysisPreferences">分析偏好</label>
+          <textarea id="analysisPreferences" placeholder="例如：简短一些，重点说明实际怎么用。" aria-describedby="preferencesHelp"></textarea>
+          <p id="preferencesHelp" class="settingsHelp">手动保存后，每次“复制给模型”都会携带这些偏好。聊天中的修改不会自动同步到这里。</p>
+          <label for="feedbackOutputRoot">反馈保存目录</label>
+          <input id="feedbackOutputRoot" type="text" spellcheck="false" autocomplete="off" aria-describedby="feedbackHelp">
+          <p id="feedbackHelp" class="settingsHelp">仅当你在聊天中明确要求记录反馈时，由有文件能力的模型保存。扩展无法读取外部聊天或确认保存结果。</p>
+          <label for="archiveOutputRoot">Obsidian 收藏目录</label>
+          <input id="archiveOutputRoot" type="text" spellcheck="false" autocomplete="off" aria-describedby="archivePathHelp">
+          <p id="archivePathHelp" class="settingsHelp">仅作为收藏指令中的保存目的地；扩展不会创建目录或写入笔记。</p>
+          <div class="settingsActions">
+            <button id="saveSettings" class="secondary" type="button">保存设置</button>
+            <button id="resetSettings" class="link" type="button">恢复默认</button>
+          </div>
+        </div>
+      </details>
+      <p id="settingsStatus" class="settingsStatus hidden" role="status"></p>
+
+      <section class="archiveAction" aria-labelledby="archiveActionTitle">
+        <div>
+          <strong id="archiveActionTitle">收藏到 Obsidian</strong>
+          <p>粘贴到已有文章分析对话；仅复制指令，不代表已保存。</p>
+        </div>
+        <button id="copyArchivePrompt" class="secondary" type="button">复制收藏指令</button>
+      </section>
+      <p id="archiveStatus" class="archiveStatus hidden" role="status" aria-live="polite"></p>
+
       <section id="idle" class="card centered">
         <div class="icon">↳</div>
         <p>自动识别正文、标题、作者和图片，并转换为 Markdown。</p>

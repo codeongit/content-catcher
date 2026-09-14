@@ -14,7 +14,15 @@ def main():
     assert manifest["action"]["default_popup"] == "popup.html"
     assert set(manifest["permissions"]) == {"activeTab", "scripting", "downloads"}
 
-    required = ["popup.html", "popup.css", "popup.js", "extractor.js", "analysis-prompt.js"]
+    required = [
+        "popup.html",
+        "popup.css",
+        "popup.js",
+        "extractor.js",
+        "analysis-prompt.js",
+        "analysis-settings.js",
+        "archive-prompt.js",
+    ]
     for filename in required:
         path = EXTENSION / filename
         assert path.is_file(), f"Missing {filename}"
@@ -24,6 +32,8 @@ def main():
     assert '<script type="module" src="popup.js"></script>' in html
     assert 'href="popup.css"' in html
     assert 'id="copyForAi"' in html
+    assert 'id="copyArchivePrompt"' in html
+    assert 'id="archiveOutputRoot"' in html
     assert 'id="readiness"' in html
     assert html.index('class="actions"') < html.index('class="tabs"')
 
@@ -32,12 +42,14 @@ def main():
     assert "chrome.downloads.download" in popup
     assert 'files: ["extractor.js"]' in popup
     assert "copyForAi" in popup
+    assert "copyArchivePrompt" in popup
     assert "renderReadiness" in popup
     assert 'from "./analysis-prompt.js"' in popup
+    assert 'from "./archive-prompt.js"' in popup
 
     analysis_prompt = (EXTENSION / "analysis-prompt.js").read_text()
     for marker in [
-        'ANALYSIS_PROMPT_VERSION = "evidence-v1"',
+        'ANALYSIS_PROMPT_VERSION = "evidence-v2"',
         "buildModelInput",
         "<capture_context>",
         "<captured_content>",
@@ -45,6 +57,17 @@ def main():
         "externalLinksVerified",
     ]:
         assert marker in analysis_prompt, f"Missing analysis prompt capability: {marker}"
+
+    analysis_settings = (EXTENSION / "analysis-settings.js").read_text()
+    assert "archiveOutputRoot" in analysis_settings
+
+    archive_prompt = (EXTENSION / "archive-prompt.js").read_text()
+    for marker in [
+        'ARCHIVE_PROMPT_VERSION = "archive-v1"',
+        "buildArchivePrompt",
+        "archiveOutputRoot",
+    ]:
+        assert marker in archive_prompt, f"Missing archive prompt capability: {marker}"
 
     extractor = (EXTENSION / "extractor.js").read_text()
     for marker in [
@@ -79,8 +102,12 @@ def main():
         ROOT / "docs/decisions/0006-semantic-selection-and-conservative-cleanup.md",
         ROOT / "docs/decisions/0007-advisory-analysis-readiness.md",
         ROOT / "docs/decisions/0008-evidence-grounded-model-handoff.md",
+        ROOT / "docs/decisions/0009-conversational-feedback.md",
+        ROOT / "docs/decisions/0010-on-demand-obsidian-archive.md",
         ROOT / "tests/extractor.test.mjs",
         ROOT / "tests/analysis-prompt.test.mjs",
+        ROOT / "tests/analysis-settings.test.mjs",
+        ROOT / "tests/archive-prompt.test.mjs",
         ROOT / "tests/popup.test.mjs",
         ROOT / "tests/fixtures/wechat-article.html",
         ROOT / "tests/fixtures/generic-article.html",

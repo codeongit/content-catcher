@@ -6,6 +6,7 @@
 
 - `Accepted`：当前有效，开发必须遵守。
 - `Superseded`：已被后续 ADR 替代，但保留历史原因。
+- `Partially superseded by`：指定部分由后续 ADR 替代，其余决策继续有效。
 - `Proposed`：仍在讨论，不能作为默认实现依据。
 
 ## 已接受决策
@@ -19,7 +20,9 @@
 | [0005](0005-regression-first-maintenance.md) | 解析问题采用回归优先的维护方式 |
 | [0006](0006-semantic-selection-and-conservative-cleanup.md) | 正文选择语义优先，清洗规则保持保守和受限 |
 | [0007](0007-advisory-analysis-readiness.md) | 使用少量通用指标提供非阻断的模型分析提示 |
-| [0008](0008-evidence-grounded-model-handoff.md) | 使用带抓取上下文和固定证据结构的模型交接契约 |
+| [0008](0008-evidence-grounded-model-handoff.md) | 使用带抓取上下文的证据化模型交接；固定格式要求由 ADR-0009 部分替代 |
+| [0009](0009-conversational-feedback.md) | 单一日常分析流程、本地偏好设置与按用户请求保存的轻量反馈 |
+| [0010](0010-on-demand-obsidian-archive.md) | 使用独立提示按需把已有分析对话中的文章收藏到 Obsidian |
 
 ## 新增或修改决策
 

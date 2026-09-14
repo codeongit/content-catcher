@@ -1,9 +1,49 @@
 import { buildModelInput } from "./analysis-prompt.js";
+import { buildArchivePrompt } from "./archive-prompt.js";
+import { DEFAULT_ANALYSIS_SETTINGS, loadAnalysisSettings, saveAnalysisSettings } from "./analysis-settings.js";
 
 const $ = (selector) => document.querySelector(selector);
 const views = { idle: $("#idle"), loading: $("#loading"), error: $("#error"), result: $("#result") };
 let article = null;
 let activeView = "markdown";
+let activeSettings = { ...DEFAULT_ANALYSIS_SETTINGS };
+
+function renderSettings() {
+  $("#analysisPreferences").value = activeSettings.preferences;
+  $("#feedbackOutputRoot").value = activeSettings.feedbackOutputRoot;
+  $("#archiveOutputRoot").value = activeSettings.archiveOutputRoot;
+}
+
+function showSettingsStatus(message, isError = false) {
+  const status = $("#settingsStatus");
+  status.textContent = message;
+  status.classList.remove("hidden");
+  status.classList.toggle("settingsError", isError);
+}
+
+function showArchiveStatus(message, isError = false) {
+  const status = $("#archiveStatus");
+  status.textContent = message;
+  status.classList.remove("hidden");
+  status.classList.toggle("archiveError", isError);
+}
+
+function saveSettings(candidate, successMessage) {
+  try {
+    activeSettings = saveAnalysisSettings(window.localStorage, candidate);
+    renderSettings();
+    showSettingsStatus(successMessage);
+  } catch (error) {
+    showSettingsStatus(`设置保存失败：${error?.message || String(error)}。继续使用上次有效设置。`, true);
+  }
+}
+
+try {
+  activeSettings = loadAnalysisSettings(window.localStorage);
+} catch (error) {
+  showSettingsStatus(`分析设置读取失败，已使用默认设置：${error?.message || String(error)}`, true);
+}
+renderSettings();
 
 function show(name) {
   Object.entries(views).forEach(([key, node]) => node.classList.toggle("hidden", key !== name));
@@ -76,8 +116,29 @@ $("#copy").addEventListener("click", async () => {
 });
 $("#copyForAi").addEventListener("click", async () => {
   if (!article) return;
-  await navigator.clipboard.writeText(buildModelInput(article));
+  await navigator.clipboard.writeText(buildModelInput(article, activeSettings));
   showCopied($("#copyForAi"), "复制给模型");
+});
+$("#copyArchivePrompt").addEventListener("click", async () => {
+  const button = $("#copyArchivePrompt");
+  try {
+    await navigator.clipboard.writeText(buildArchivePrompt({ archiveOutputRoot: activeSettings.archiveOutputRoot }));
+    showCopied(button, "复制收藏指令");
+    showArchiveStatus("收藏指令已复制。");
+  } catch (error) {
+    button.textContent = "复制收藏指令";
+    showArchiveStatus(`收藏指令复制失败：${error?.message || String(error)}`, true);
+  }
+});
+$("#saveSettings").addEventListener("click", () => {
+  saveSettings({
+    preferences: $("#analysisPreferences").value,
+    feedbackOutputRoot: $("#feedbackOutputRoot").value,
+    archiveOutputRoot: $("#archiveOutputRoot").value
+  }, "设置已保存，后续复制时生效。");
+});
+$("#resetSettings").addEventListener("click", () => {
+  saveSettings(DEFAULT_ANALYSIS_SETTINGS, "已恢复默认设置。");
 });
 $("#download").addEventListener("click", async () => {
   if (!article) return;

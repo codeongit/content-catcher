@@ -2,7 +2,7 @@
 * { box-sizing: border-box; }
 body { width: 420px; min-height: 510px; margin: 0; background: radial-gradient(circle at top right, #ddf1e0, transparent 42%), #f4f1e8; }
 .app { padding: 22px; }
-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
 small { color: #58705f; font-size: 10px; font-weight: 800; letter-spacing: .16em; }
 h1 { margin: 4px 0 0; font: 700 26px/1.2 Georgia, "Noto Serif SC", serif; }
 .badge { padding: 6px 9px; border: 1px solid #bdd1c0; border-radius: 999px; color: #376044; background: #ffffff8c; font-size: 11px; }
@@ -34,6 +34,27 @@ button { min-height: 42px; padding: 0 17px; border: 0; border-radius: 10px; font
 textarea { width: 100%; height: 250px; margin-top: 10px; padding: 14px; resize: vertical; border: 1px solid #17211b24; border-radius: 12px; outline: none; color: #26322b; background: #ffffffd1; font: 11px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace; }
 .actions { display: grid; grid-template-columns: .8fr 1.25fr 1fr; gap: 8px; margin-top: 10px; }
 .actions button { padding: 0 9px; font-size: 12px; }
+.analysisSettings { padding: 11px 13px; border: 1px solid #17211b1f; border-radius: 12px; background: #ffffff8c; font-size: 12px; }
+.analysisSettings summary { color: #376044; cursor: pointer; font-weight: 650; }
+.settingsFields { display: grid; margin-top: 14px; }
+.settingsFields label { color: #384b3d; font-weight: 650; }
+.settingsFields textarea, .settingsFields input { width: 100%; margin-top: 6px; padding: 9px 10px; border: 1px solid #17211b24; border-radius: 8px; color: #26322b; background: #fff; font-family: inherit; font-size: 12px; line-height: 1.5; }
+.settingsFields textarea { height: 78px; min-height: 62px; }
+.settingsFields input { min-height: 36px; }
+.settingsFields textarea:focus, .settingsFields input:focus { outline: 2px solid #1d6b45; outline-offset: 1px; }
+.settingsHelp { margin: 6px 0 14px; color: #687169; font-size: 11px; line-height: 1.6; }
+.settingsActions { display: flex; align-items: center; gap: 18px; }
+.settingsActions .secondary { min-height: 34px; padding: 0 13px; font-size: 12px; }
+.settingsStatus { margin: 7px 0 0; color: #285c3b; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.settingsStatus.settingsError { color: #8a342d; }
+.archiveAction { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; padding: 10px 12px; border: 1px solid #17211b1f; border-radius: 12px; background: #ffffff8c; }
+.archiveAction div { min-width: 0; }
+.archiveAction strong { color: #384b3d; font-size: 12px; }
+.archiveAction p { margin: 4px 0 0; color: #687169; font-size: 10px; line-height: 1.45; }
+.archiveAction button { flex: 0 0 auto; min-height: 34px; padding: 0 11px; font-size: 11px; }
+.archiveStatus { margin: 7px 0 0; color: #285c3b; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+.archiveStatus.archiveError { color: #8a342d; }
+#idle, #loading, #error, #result { margin-top: 12px; }
 .linkActions { display: flex; justify-content: center; gap: 18px; margin-top: 13px; }
 .link { display: block; min-height: auto; margin: 0; padding: 2px; color: #627068; background: transparent; font-size: 11px; text-decoration: underline; }
 footer { margin-top: 18px; color: #7a827d; font-size: 10px; text-align: center; }
