@@ -40,3 +40,7 @@ For a distributable package, also run `make package`. A pushed change is complet
 ## Browser testing ownership
 
 Real-browser testing is owned by human maintainers, including extension loading/reloading, live-page extraction, popup layout, clipboard, and downloads. Agents perform offline regression tests, static checks, and packaging as needed, then provide a concise manual checklist. Do not initiate real-browser testing unless the user explicitly reassigns it. Pending human verification is a handoff item, not an agent browser-tool blocker; report it as pending until a human supplies results, and never equate jsdom or static checks with a real-browser pass.
+
+## Archived article acceptance
+
+When reviewing saved article notes, follow “收藏成品验收” in [the maintenance playbook](docs/maintenance-playbook.md#收藏成品验收). Judge whether the notes serve reliable storage and later reference before listing improvements. State a pass when there are no blocking issues within the reviewed scope; minor formatting, repetition, and nonessential metadata uncertainty are not automatic failures. Do not turn individual review suggestions into new default prompt rules.
