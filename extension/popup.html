@@ -18,7 +18,7 @@
         <div class="settingsFields">
           <label for="analysisPreferences">分析偏好</label>
           <textarea id="analysisPreferences" placeholder="例如：简短一些，重点说明实际怎么用。" aria-describedby="preferencesHelp"></textarea>
-          <p id="preferencesHelp" class="settingsHelp">手动保存后，每次“复制给模型”都会携带这些偏好。聊天中的修改不会自动同步到这里。</p>
+          <p id="preferencesHelp" class="settingsHelp">默认使用通俗中文和短段落。保存偏好可调整相应表达方式；聊天中的修改不会自动同步到这里。</p>
           <label for="feedbackOutputRoot">反馈保存目录</label>
           <input id="feedbackOutputRoot" type="text" spellcheck="false" autocomplete="off" aria-describedby="feedbackHelp">
           <p id="feedbackHelp" class="settingsHelp">仅当你在聊天中明确要求记录反馈时，由有文件能力的模型保存。扩展无法读取外部聊天或确认保存结果。</p>
@@ -77,7 +77,8 @@
           <button class="tab active" data-view="markdown">Markdown</button>
           <button class="tab" data-view="text">纯文本</button>
         </div>
-        <textarea id="preview" spellcheck="false" aria-label="内容预览"></textarea>
+        <textarea id="preview" readonly spellcheck="false" aria-label="内容预览" aria-describedby="previewHelp"></textarea>
+        <p id="previewHelp" class="settingsHelp">只读预览，可选中文字复制；导出使用原始抓取内容。</p>
         <div class="linkActions">
           <button id="again" class="link">重新抓取</button>
           <button id="diagnostic" class="link">导出脱敏诊断样本</button>

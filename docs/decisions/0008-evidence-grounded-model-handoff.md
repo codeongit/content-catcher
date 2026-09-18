@@ -3,7 +3,8 @@
 - Status: Accepted
 - Date: 2026-09-11
 - Extends: [ADR-0007](0007-advisory-analysis-readiness.md)
-- Partially superseded by: [ADR-0009](0009-conversational-feedback.md)（2026-09-14）：五段式及条目组织改为默认格式，表格不强制；用户可调整篇幅、重点和形式。证据、推导、资料边界与限制要求继续有效。以下保留原决策正文。
+- Partially superseded by: [ADR-0009](0009-conversational-feedback.md)（2026-09-14）：五段式及条目组织改为默认格式，表格不强制；用户可调整篇幅、重点和形式。证据、推导、资料边界与限制要求继续有效。
+- Partially superseded by: [ADR-0011](0011-evidence-index-and-analysis-contract.md)（2026-09-18）：模型交接增加定位索引与安全分阶段清理统计，并明确按原始主张和证据类型评价内部支撑。未核验材料、原文不改和普通导出边界继续有效。以下保留原决策正文。
 
 ## Context
 

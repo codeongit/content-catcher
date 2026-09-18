@@ -130,12 +130,14 @@ test("Popup defaults to collapsed settings and preserves all article exports", a
     assert.equal($(".archiveAction p").textContent, "粘贴到已有文章分析对话；仅复制指令，不代表已保存。");
     assert.equal($("#readinessTitle").textContent, "正文抓取正常");
     assert.match($(".readinessScope").textContent, /图片内容与外部来源未核验/);
+    assert.match($("#preferencesHelp").textContent, /默认使用通俗中文和短段落/);
+    assert.match($("#preferencesHelp").textContent, /保存偏好可调整相应表达方式/);
     assert.match($("#preferencesHelp").textContent, /聊天中的修改不会自动同步/);
     assert.match($("#feedbackHelp").textContent, /明确要求记录反馈/);
     assert.match($("#feedbackHelp").textContent, /无法读取外部聊天或确认保存结果/);
 
     await click("#copyForAi");
-    assert.match(copied.at(-1), /"promptVersion": "evidence-v2"/);
+    assert.match(copied.at(-1), /"promptVersion": "evidence-v4"/);
     assert.deepEqual(copiedSettings(), promptSettings(DEFAULT_ANALYSIS_SETTINGS));
     assert.ok(copied.at(-1).endsWith(`<captured_content>\n${article.markdown}</captured_content>`));
     assert.equal(storage.entries.size, 0, "copy must not persist article or settings");
@@ -151,6 +153,28 @@ test("Popup defaults to collapsed settings and preserves all article exports", a
     assert.equal(await blobs.get(downloads[0].url).text(), article.markdown);
     await click("#diagnostic");
     assert.deepEqual(JSON.parse(await blobs.get(downloads[1].url).text()), article.diagnostic);
+  });
+});
+
+test("Read-only preview never becomes the source of exported content", async () => {
+  await withPopup({}, async ({ $, click, copied, downloads, blobs }) => {
+    assert.equal($("#preview").readOnly, true);
+    assert.match($("#previewHelp").textContent, /只读预览/);
+    // Programmatic changes can bypass readonly; exports must still use the article.
+    $("#preview").value = "不应导出的预览变更";
+    await click("#copy");
+    assert.equal(copied.at(-1), article.markdown);
+    await click("#copyForAi");
+    assert.ok(copied.at(-1).endsWith(`<captured_content>\n${article.markdown}</captured_content>`));
+    await click("#download");
+    assert.equal(await blobs.get(downloads.at(-1).url).text(), article.markdown);
+    await click('[data-view="text"]');
+    assert.equal($("#preview").value, article.text);
+    $("#preview").value = "另一处预览变更";
+    await click("#copy");
+    assert.equal(copied.at(-1), article.text);
+    await click('[data-view="markdown"]');
+    assert.equal($("#preview").value, article.markdown);
   });
 });
 

@@ -111,7 +111,8 @@ document.querySelectorAll(".tab").forEach((node) => node.addEventListener("click
   render();
 }));
 $("#copy").addEventListener("click", async () => {
-  await navigator.clipboard.writeText($("#preview").value);
+  if (!article) return;
+  await navigator.clipboard.writeText(activeView === "markdown" ? article.markdown : article.text);
   showCopied($("#copy"), "复制");
 });
 $("#copyForAi").addEventListener("click", async () => {

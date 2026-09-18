@@ -9,8 +9,8 @@ function embeddedSettings(output) {
 
 test("Archive prompt is independent, versioned, and defaults to the Obsidian archive directory", () => {
   const output = buildArchivePrompt();
-  assert.equal(ARCHIVE_PROMPT_VERSION, "archive-v1");
-  assert.match(output, /收藏提示版本：archive-v1/);
+  assert.equal(ARCHIVE_PROMPT_VERSION, "archive-v2");
+  assert.match(output, /收藏提示版本：archive-v2/);
   assert.deepEqual(embeddedSettings(output), { archiveOutputRoot: DEFAULT_ANALYSIS_SETTINGS.archiveOutputRoot });
   assert.match(output, /本次是文章收藏，不是问题反馈记录/);
   assert.match(output, /多篇文章而目标不明确.*缺少抓取原文、最终确认的分析/);
@@ -19,6 +19,17 @@ test("Archive prompt is independent, versioned, and defaults to the Obsidian arc
   assert.match(output, /区分原文主张与分析推导/);
   assert.match(output, /不要保存完整对话或隐含推理/);
   assert.match(output, /远程图片链接不等于图片已经备份，不下载图片/);
+});
+
+test("Archive contract separates readable source from chat packaging and preserves original code blocks", () => {
+  const output = buildArchivePrompt();
+  assert.match(output, /原文单独成节，直接作为可渲染的 Markdown 正文保存/);
+  assert.match(output, /不额外用代码围栏或整体缩进包裹整篇抓取稿/);
+  assert.match(output, /原有元数据.*空白原样保留/);
+  assert.match(output, /原文自带的代码块（包括 Markdown 示例）也原样保留/);
+  assert.match(output, /不得为去掉外层包裹而删除内部代码围栏/);
+  assert.match(output, /聊天中.*围栏只是交付包装，不属于实际保存的文件内容/);
+  assert.match(output, /保存后检查原文部分没有额外的整篇代码块包裹/);
 });
 
 test("Archive prompt requires safe naming, duplicate review, and explicit failure handling", () => {

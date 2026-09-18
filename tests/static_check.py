@@ -20,6 +20,7 @@ def main():
         "popup.js",
         "extractor.js",
         "analysis-prompt.js",
+        "evidence-index.js",
         "analysis-settings.js",
         "archive-prompt.js",
     ]
@@ -49,9 +50,12 @@ def main():
 
     analysis_prompt = (EXTENSION / "analysis-prompt.js").read_text()
     for marker in [
-        'ANALYSIS_PROMPT_VERSION = "evidence-v2"',
+        'ANALYSIS_PROMPT_VERSION = "evidence-v4"',
         "buildModelInput",
         "<capture_context>",
+        "<evidence_index>",
+        "buildEvidenceIndex",
+        "cleanupStages",
         "<captured_content>",
         "imagePixelsTranscribed",
         "externalLinksVerified",
@@ -63,7 +67,7 @@ def main():
 
     archive_prompt = (EXTENSION / "archive-prompt.js").read_text()
     for marker in [
-        'ARCHIVE_PROMPT_VERSION = "archive-v1"',
+        'ARCHIVE_PROMPT_VERSION = "archive-v2"',
         "buildArchivePrompt",
         "archiveOutputRoot",
     ]:
@@ -80,7 +84,7 @@ def main():
         "account:",
         "SITE_ADAPTERS",
         "diagnosticSnapshot",
-        "schemaVersion: 2",
+        "schemaVersion: 3",
         "lengthPreservingPlaceholder",
         "selection:",
         "assessAnalysisReadiness",
@@ -106,6 +110,10 @@ def main():
         ROOT / "docs/decisions/0010-on-demand-obsidian-archive.md",
         ROOT / "tests/extractor.test.mjs",
         ROOT / "tests/analysis-prompt.test.mjs",
+        ROOT / "tests/evidence-index.test.mjs",
+        ROOT / "docs/decisions/0011-evidence-index-and-analysis-contract.md",
+        ROOT / "docs/decisions/0012-decision-oriented-plain-language-analysis.md",
+        ROOT / "docs/decisions/0013-readable-archive-source.md",
         ROOT / "tests/analysis-settings.test.mjs",
         ROOT / "tests/archive-prompt.test.mjs",
         ROOT / "tests/popup.test.mjs",
@@ -114,6 +122,10 @@ def main():
         ROOT / "tests/fixtures/short-article.html",
         ROOT / "tests/fixtures/body-fallback.html",
         ROOT / "tests/fixtures/large-cleanup.html",
+        ROOT / "tests/fixtures/code-preservation.html",
+        ROOT / "tests/fixtures/nested-code.html",
+        ROOT / "tests/fixtures/heading-boundaries.html",
+        ROOT / "tests/fixtures/cleanup-stages.html",
     ]:
         assert path.is_file(), f"Missing regression asset: {path.relative_to(ROOT)}"
 

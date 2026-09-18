@@ -3,6 +3,7 @@
 - Status: Accepted
 - Date: 2026-09-14
 - Extends: [ADR-0009](0009-conversational-feedback.md)
+- Partially superseded by: [ADR-0013](0013-readable-archive-source.md)（2026-09-18）：收藏提示升级为 `archive-v2`，统一原文直接呈现 Markdown。以下保留原决策正文，其余接口与安全边界继续有效。
 
 ## Context
 

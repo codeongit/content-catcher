@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><title>标题边界合成测试</title></head><body>
+<article id="js_content">
+  <p>这份人工编写的材料用于验证视觉标题与编号正文的边界。列表中的步骤应继续保留为列表，普通段落里的编号观点不能变成章节。仅在站点结构和明确标题信号同时存在时，才转换视觉标题。以下短句均为合成内容，不对应真实文章。测试同时在通用网址和微信网址运行，防止站点规则影响其他网站的语义结构，也防止单纯依赖字符串编号改变文章层次。</p>
+  <section>1.第一章</section>
+  <section><strong>1.1子章节</strong></section>
+  <section><strong>1.1.1三级编号保持原样</strong></section>
+  <section>2.一个待验证的观点</section>
+  <section>2.第一部候选内容</section>
+  <section>2.第二卷候选内容</section>
+  <section><strong>2.1这是完整句子。</strong></section>
+  <p>3. 普通编号论点保留为段落。</p>
+  <p><strong>3.1 加粗段落仍是段落</strong></p>
+  <ol><li>观察现象</li><li>验证结果<ul><li>保留嵌套步骤</li></ul></li></ol>
+  <ul><li><section><strong>4.1列表内不能提升</strong></section></li></ul>
+  <blockquote><section><strong>5.1引用内不能提升</strong></section></blockquote>
+  <pre><code>6. 代码内不能提升</code></pre>
+  <h2>原生标题保留</h2>
+</article></body></html>

@@ -1,0 +1,21 @@
+<!doctype html>
+<html><head><title>代码结构合成测试</title></head><body><article>
+  <p>这份完全虚构的文章用于检查代码导出的空白和结构。代码示例分别覆盖原始换行、网页换行标签、语法高亮包装、独立行容器和嵌套行容器。正文只用于满足解析器的正文长度要求，不包含真实文章内容或个人信息。导出的代码应保留顺序、缩进、连续空行和注释，代码里的反引号也不能截断围栏。普通段落的整理不得影响代码内容。</p>
+  <pre><code>
+  const message = "hello";&#32;&#32;
+
+
+	return message;
+</code></pre>
+  <pre><code>if (ready) {<br>  start();<br>}</code></pre>
+  <pre><code><span class="token comment">// retain comment</span>
+<span class="token keyword">return</span> <span class="token number">1</span>;</code></pre>
+  <pre><code><div>first();</div><div></div><div><span>  second();</span></div></code></pre>
+  <pre><code><div><div>outer();</div><div><span>  inner();</span></div></div><div><br></div><div>last();</div></code></pre>
+  <pre><code><div>first();</div>
+<div>second();</div></code></pre>
+  <pre><code>const fence = "````";
+1. code stays code</code></pre>
+  <pre><code>CONTENTCATCHERCODE0END</code></pre>
+  <p>CONTENTCATCHERCODE0END</p>
+</article></body></html>

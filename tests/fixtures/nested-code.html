@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><title>嵌套代码合成测试</title></head><body><article>
+  <p>这份虚构材料检查引用与列表中的代码。代码无论放在普通引用、编号步骤、项目列表，还是引用和列表相互嵌套的位置，都应保留内容和空白。列表和引用的标记只表达文章结构，不能混入代码文本。下面的短句与代码完全人工编写，不包含真实文章内容。每段代码前后的解释应维持原有顺序，代码中的缩进、空行和尾随空格也应该保留。</p>
+  <blockquote><p>引用开头</p><pre><code>
+  quoted();&#32;&#32;
+
+	quotedEnd();
+</code></pre><p>引用结尾</p></blockquote>
+  <ol><li><p>编号步骤开头</p><pre><code>if (ready) {<br>  numbered();<br>}</code></pre><p>编号步骤结尾</p></li></ol>
+  <ul><li><pre><code>const ticks = "```";
+  bullet();  </code></pre></li></ul>
+  <blockquote><ol><li>引用中的步骤<pre><code>  quoteList();
+
+</code></pre>引用中的步骤结束</li></ol></blockquote>
+  <ol><li><blockquote><pre><code>  listQuote();&#32;&#32;
+</code></pre></blockquote></li></ol>
+  <ol><li>父步骤<ul><li><pre><code>  nestedList();
+
+</code></pre></li></ul></li></ol>
+</article></body></html>

@@ -20,9 +20,12 @@
 | [0005](0005-regression-first-maintenance.md) | 解析问题采用回归优先的维护方式 |
 | [0006](0006-semantic-selection-and-conservative-cleanup.md) | 正文选择语义优先，清洗规则保持保守和受限 |
 | [0007](0007-advisory-analysis-readiness.md) | 使用少量通用指标提供非阻断的模型分析提示 |
-| [0008](0008-evidence-grounded-model-handoff.md) | 使用带抓取上下文的证据化模型交接；固定格式要求由 ADR-0009 部分替代 |
-| [0009](0009-conversational-feedback.md) | 单一日常分析流程、本地偏好设置与按用户请求保存的轻量反馈 |
-| [0010](0010-on-demand-obsidian-archive.md) | 使用独立提示按需把已有分析对话中的文章收藏到 Obsidian |
+| [0008](0008-evidence-grounded-model-handoff.md) | 使用带抓取上下文的证据化模型交接；格式与交接细节由 ADR-0009、ADR-0011 部分替代 |
+| [0009](0009-conversational-feedback.md) | 单一日常分析流程、本地偏好设置与按用户请求保存的轻量反馈；提示版本与证据定位由 ADR-0011 部分替代 |
+| [0010](0010-on-demand-obsidian-archive.md) | 使用独立提示按需把已有分析对话中的文章收藏到 Obsidian；收藏版本与原文呈现由 ADR-0013 部分替代 |
+| [0011](0011-evidence-index-and-analysis-contract.md) | 使用可回查的证据索引、分阶段清理统计与按主张类型评价的分析契约；分析表达与判断细节由 ADR-0012 部分替代 |
+| [0012](0012-decision-oriented-plain-language-analysis.md) | 采用通俗表达默认、按维度覆盖的偏好，以及决策导向和独立验证核对的分析契约 |
+| [0013](0013-readable-archive-source.md) | 收藏原文统一直接呈现 Markdown，保留内部代码块并区分聊天交付包装 |
 
 ## 新增或修改决策
 

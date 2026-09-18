@@ -4,6 +4,7 @@
 - Date: 2026-09-14
 - Extends: [ADR-0008](0008-evidence-grounded-model-handoff.md)
 - Partially supersedes: ADR-0008 的固定输出格式要求；保留证据评价和资料边界。
+- Partially superseded by: [ADR-0011](0011-evidence-index-and-analysis-contract.md)（2026-09-18）：日常分析提示升级为 `evidence-v3`，增加证据定位与清理阶段上下文，细化原始主张和内部支撑的评价要求。本地偏好、对话修订、按需反馈、无自动学习及无默认付费评测的决策继续有效。以下保留原决策正文。
 
 ## Context
 

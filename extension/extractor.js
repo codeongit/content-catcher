@@ -1,10 +1,12 @@
 (() => {
-  const DROP = "script,style,noscript,template,iframe,canvas,svg,nav,footer,form,button,input,select,textarea,[hidden],[aria-hidden='true'],.advertisement,.ads,.ad,.share,.sharing,.social,.comments,.comment,.related,.recommend,.newsletter,.subscribe,.cookie,.modal";
+  const STRUCTURAL_DROP = "script,style,noscript,template,iframe,canvas,svg,nav,footer,form,button,input,select,textarea,[hidden],[aria-hidden='true']";
+  const NOISE_DROP = ".advertisement,.ads,.ad,.share,.sharing,.social,.comments,.comment,.related,.recommend,.newsletter,.subscribe,.cookie,.modal";
   const POSITIVE = /article|body|content|entry|main|page|post|story|text|正文|文章/i;
   const NEGATIVE = /ad-|ads|aside|banner|breadcrumb|comment|cookie|footer|header|menu|nav|promo|related|share|sidebar|social|subscribe/i;
   const WECHAT_NOISE = /^(在小说阅读器读本章|去阅读|在公众号小说中沉浸阅读|阅读原文|阅读全文)$/;
   const TRAILING_PROMOTION = /(扫描下方二维码|点击阅读原文即可体验|预览时标签不可点|为Agent而生，驱动AI生产力)/i;
   const DIAGNOSTIC_TEXT_KIND = "data-cc-text-kind";
+  const DIAGNOSTIC_HEADING_LEVEL = "data-cc-heading-level";
 
   const SITE_ADAPTERS = [
     {
@@ -13,7 +15,8 @@
       contentRoot: () => document.querySelector("#js_content") || document.querySelector(".rich_media_content"),
       account: () => meta(["#js_name", ".rich_media_meta_nickname"]),
       author: () => meta(["#js_author_name", "#author_name"]),
-      cleanup: (root) => trimTrailingPromotion(root)
+      cleanup: (root) => trimTrailingPromotion(root),
+      transform: (root) => promoteVisualHeadings(root)
     }
   ];
 
@@ -21,8 +24,12 @@
     return SITE_ADAPTERS.find((adapter) => adapter.matches()) || null;
   }
 
+  function normalizeText(value) {
+    return value.replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
   function normalized(node) {
-    return (node?.innerText || node?.textContent || "").replace(/\u00a0/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    return normalizeText(node?.innerText || node?.textContent || "");
   }
 
   function meta(selectors, attribute = "content") {
@@ -131,6 +138,7 @@
     const candidates = [];
     let textNode;
     while ((textNode = walker.nextNode())) {
+      if (textNode.parentElement?.closest("pre,code")) continue;
       const value = (textNode.nodeValue || "").trim();
       const markedPromotion = textNode.parentElement?.closest?.(`[${DIAGNOSTIC_TEXT_KIND}="trailing-promotion"]`);
       if (!TRAILING_PROMOTION.test(value) && !markedPromotion) continue;
@@ -157,12 +165,40 @@
 
   function clean(root) {
     const clone = root.cloneNode(true);
-    clone.querySelectorAll(DROP).forEach((node) => node.remove());
-    clone.querySelectorAll("img").forEach((img) => {
-      const src = img.getAttribute("data-src") || img.getAttribute("data-original") || img.getAttribute("data-lazy-src") || img.getAttribute("src");
-      if (!src || src.startsWith("data:image/gif")) return img.remove();
-      img.setAttribute("src", absolute(src));
-      ["srcset", "data-src", "data-original", "data-lazy-src", "style", "class"].forEach((name) => img.removeAttribute(name));
+    const stages = [];
+    const stage = (rule, apply) => {
+      const before = contentMetrics(clone);
+      apply();
+      const after = contentMetrics(clone);
+      stages.push({
+        rule,
+        removedElementCount: Math.max(0, before.elementCount - after.elementCount),
+        removedTextLength: Math.max(0, before.textLength - after.textLength)
+      });
+    };
+    stage("structure", () => {
+      clone.querySelectorAll(STRUCTURAL_DROP).forEach((node) => {
+        if (clone.contains(node)) node.remove();
+      });
+    });
+    stage("placeholder-images", () => {
+      clone.querySelectorAll("img").forEach((img) => {
+        if (!clone.contains(img)) return;
+        const src = img.getAttribute("data-src") || img.getAttribute("data-original") || img.getAttribute("data-lazy-src") || img.getAttribute("src");
+        if (!src || src.startsWith("data:image/gif")) return img.remove();
+        img.setAttribute("src", absolute(src));
+        ["srcset", "data-src", "data-original", "data-lazy-src", "style", "class"].forEach((name) => img.removeAttribute(name));
+      });
+    });
+    stage("noise", () => {
+      clone.querySelectorAll(NOISE_DROP).forEach((node) => {
+        if (clone.contains(node) && !node.closest("pre,code")) node.remove();
+      });
+      clone.querySelectorAll("*").forEach((node) => {
+        if (!clone.contains(node) || node.closest("pre,code")) return;
+        const text = normalized(node);
+        if ((NEGATIVE.test(`${node.id || ""} ${node.className || ""}`) && text.length < 500) || WECHAT_NOISE.test(text)) node.remove();
+      });
     });
     clone.querySelectorAll("a[href]").forEach((link) => {
       const href = absolute(link.getAttribute("href"));
@@ -170,17 +206,16 @@
     });
     clone.querySelectorAll("*").forEach((node) => {
       ["style", "onclick", "onload"].forEach((name) => node.removeAttribute(name));
-      const text = normalized(node);
-      if ((NEGATIVE.test(`${node.id || ""} ${node.className || ""}`) && text.length < 500) || WECHAT_NOISE.test(text)) node.remove();
     });
-    activeAdapter()?.cleanup?.(clone);
-    return clone;
+    stage("site-tail", () => activeAdapter()?.cleanup?.(clone));
+    return { content: clone, stages };
   }
 
   function contentMetrics(root) {
     return {
       elementCount: root.querySelectorAll("*").length + 1,
-      textLength: normalized(root).length,
+      // Metrics must not change with layout attachment or innerText availability.
+      textLength: normalizeText(root.textContent || "").length,
       paragraphCount: root.querySelectorAll("p").length,
       headingCount: root.querySelectorAll("h1,h2,h3,h4,h5,h6").length,
       imageCount: root.querySelectorAll("img").length,
@@ -231,11 +266,9 @@
     return { present: Boolean(value), length: value?.length || 0, source: source || "" };
   }
 
-  function numericHeadingLevel(value, textNode) {
+  function diagnosticHeadingLevel(textNode) {
     if (textNode.parentElement?.closest?.("pre,code")) return 0;
-    if (/^\d{1,2}\.\d{1,2}(?:\.|\s*)\S/.test(value)) return 3;
-    if (/^\d{1,2}\.\s*\S/.test(value)) return 2;
-    return 0;
+    return Number(textNode.parentElement?.closest?.(`[${DIAGNOSTIC_HEADING_LEVEL}]`)?.getAttribute(DIAGNOSTIC_HEADING_LEVEL)) || 0;
   }
 
   function lengthPreservingPlaceholder(length, kind, headingLevel = 0) {
@@ -257,9 +290,10 @@
     if (!value) return;
     const leading = raw.match(/^\s*/)?.[0] || "";
     const trailing = raw.match(/\s*$/)?.[0] || "";
-    const headingLevel = numericHeadingLevel(value, textNode);
-    const kind = TRAILING_PROMOTION.test(value) ? "trailing-promotion" : textNode.parentElement?.closest?.("pre,code") ? "code" : headingLevel ? "visual-heading" : "prose";
-    textNode.nodeValue = `${leading}${lengthPreservingPlaceholder(value.length, kind, headingLevel)}${trailing}`;
+    const headingLevel = diagnosticHeadingLevel(textNode);
+    const kind = textNode.parentElement?.closest?.("pre,code") ? "code" : TRAILING_PROMOTION.test(value) ? "trailing-promotion" : headingLevel ? "visual-heading" : "prose";
+    const placeholder = kind === "code" ? value.replace(/[^\s]/g, "文") : lengthPreservingPlaceholder(value.length, kind, headingLevel);
+    textNode.nodeValue = `${leading}${placeholder}${trailing}`;
     const parent = textNode.parentElement;
     if (parent && kind !== "prose") parent.setAttribute(DIAGNOSTIC_TEXT_KIND, kind);
     if (parent && [...parent.childNodes].filter((child) => child.nodeType === Node.TEXT_NODE && child.nodeValue.trim()).length === 1) {
@@ -269,6 +303,9 @@
 
   function diagnosticSnapshot(root, adapter, context) {
     const snapshot = root.cloneNode(true);
+    const visualHeadings = adapter?.id === "wechat"
+      ? [...snapshot.querySelectorAll("section")].map((node) => ({ node, level: visualHeadingLevel(node) })).filter(({ level }) => level)
+      : [];
     const allowed = new Set(["id", "class", "role", "itemprop", "datetime", "alt", "href", "src", "data-src", "data-original", "data-lazy-src"]);
     snapshot.querySelectorAll("script,style,noscript,template,form,input,textarea,select,button,iframe").forEach((node) => node.remove());
     [snapshot, ...snapshot.querySelectorAll("*")].forEach((node) => {
@@ -283,6 +320,7 @@
         if (node.hasAttribute(name)) node.setAttribute(name, "https://example.invalid/image");
       });
     });
+    visualHeadings.forEach(({ node, level }) => node.setAttribute(DIAGNOSTIC_HEADING_LEVEL, String(level)));
     const walker = document.createTreeWalker(snapshot, NodeFilter.SHOW_TEXT);
     let node;
     while ((node = walker.nextNode())) {
@@ -291,7 +329,7 @@
     const before = context.beforeMetrics;
     const after = context.afterMetrics;
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       extensionVersion: chrome?.runtime?.getManifest?.().version || "unknown",
       site: adapter?.id || "generic",
       hostname: location.hostname,
@@ -318,7 +356,8 @@
           removedElementCount: Math.max(0, before.elementCount - after.elementCount),
           removedTextLength: Math.max(0, before.textLength - after.textLength),
           trailingPromotionDetected: TRAILING_PROMOTION.test(normalized(root)),
-          siteCleanupApplied: Boolean(adapter?.cleanup)
+          siteCleanupApplied: context.cleanupStages.some((stage) => stage.rule === "site-tail" && (stage.removedElementCount > 0 || stage.removedTextLength > 0)),
+          stages: context.cleanupStages
         }
       },
       html: snapshot.outerHTML
@@ -347,55 +386,158 @@
     return [pad(rows[0]), Array(width).fill("---"), ...rows.slice(1).map(pad)].map((row) => `| ${row.join(" | ")} |`).join("\n");
   }
 
-  function block(node, depth = 0) {
-    if (node.nodeType === Node.TEXT_NODE) return inline(node);
+  function codeText(root) {
+    const tokens = [];
+    const visit = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.nodeValue) tokens.push({ type: "text", value: node.nodeValue });
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.tagName === "BR") {
+        tokens.push({ type: "text", value: "\n" });
+        return;
+      }
+      const line = ["DIV", "P"].includes(node.tagName);
+      if (line) tokens.push({ type: "boundary" });
+      const start = tokens.length;
+      [...node.childNodes].forEach(visit);
+      if (line) {
+        const contents = tokens.slice(start);
+        if (!contents.length || (contents.length === 1 && contents[0].type === "text" && contents[0].value === "\n")) {
+          tokens.splice(start, contents.length, { type: "empty-line" });
+        }
+        tokens.push({ type: "boundary" });
+      }
+    };
+    [...root.childNodes].forEach(visit);
+    let value = "";
+    let boundary = false;
+    for (const token of tokens) {
+      if (token.type === "boundary") {
+        boundary = true;
+        continue;
+      }
+      if (token.type === "empty-line") {
+        if (value && !value.endsWith("\n")) value += "\n";
+        value += "\n";
+      } else {
+        if (boundary && value && !value.endsWith("\n") && !token.value.startsWith("\n")) value += "\n";
+        value += token.value;
+      }
+      boundary = false;
+    }
+    if (boundary && value && !value.endsWith("\n")) value += "\n";
+    return value;
+  }
+
+  function fencedCode(node) {
+    const value = codeText(node);
+    const longest = [...value.matchAll(/`+/g)].reduce((maximum, [run]) => Math.max(maximum, run.length), 0);
+    const fence = "`".repeat(Math.max(3, longest + 1));
+    return `${fence}\n${value}${value.endsWith("\n") ? "" : "\n"}${fence}`;
+  }
+
+  function blockChildren(node, context) {
+    const blockTags = new Set(["ARTICLE", "ASIDE", "DIV", "FIGURE", "MAIN", "SECTION", "P", "FIGCAPTION", "H1", "H2", "H3", "H4", "H5", "H6", "IMG", "HR", "BLOCKQUOTE", "PRE", "TABLE", "UL", "OL"]);
+    let output = "";
+    let inlineNodes = [];
+    const flushInline = (separator = "\n\n") => {
+      const value = inlineNodes.map(inline).join("").trim();
+      if (value) output += value + separator;
+      inlineNodes = [];
+    };
+    for (const child of node.childNodes) {
+      if (child.nodeType === Node.ELEMENT_NODE && blockTags.has(child.tagName)) {
+        flushInline(["UL", "OL"].includes(child.tagName) ? "\n" : "\n\n");
+        output += block(child, 0, context);
+      } else {
+        inlineNodes.push(child);
+      }
+    }
+    flushInline();
+    return output;
+  }
+
+  function block(node, depth = 0, context) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue?.trim() ? inline(node) : "";
     if (node.nodeType !== Node.ELEMENT_NODE) return "";
     const tag = node.tagName;
     if (/^H[1-6]$/.test(tag)) return `${"#".repeat(Number(tag[1]))} ${inline(node).trim()}\n\n`;
     if (["P", "FIGCAPTION"].includes(tag)) return `${inline(node).trim()}\n\n`;
     if (tag === "IMG") return `${inline(node)}\n\n`;
     if (tag === "HR") return "---\n\n";
-    if (tag === "BLOCKQUOTE") return `${normalized(node).split("\n").map((line) => `> ${line}`).join("\n")}\n\n`;
-    if (tag === "PRE") return `\`\`\`\n${node.textContent.trim()}\n\`\`\`\n\n`;
+    if (tag === "BLOCKQUOTE") {
+      const value = blockChildren(node, context).trim();
+      return value ? `${value.split("\n").map((line) => line ? `> ${line}` : ">").join("\n")}\n\n` : "";
+    }
+    if (tag === "PRE") {
+      const marker = `${context.codePrefix}${context.codeBlocks.length}END`;
+      context.codeBlocks.push({ marker, value: fencedCode(node) });
+      return `${marker}\n\n`;
+    }
     if (tag === "TABLE") return `${table(node)}\n\n`;
     if (["UL", "OL"].includes(tag)) {
       const rows = [...node.children].filter((item) => item.tagName === "LI").map((item, index) => {
-        const value = [...item.childNodes].filter((child) => !(child.nodeType === Node.ELEMENT_NODE && ["UL", "OL"].includes(child.tagName))).map(inline).join("").trim();
-        if (!value && !item.querySelector("ul,ol")) return "";
+        const value = blockChildren(item, context).trim();
+        if (!value) return "";
         const marker = tag === "OL" ? `${index + 1}.` : "-";
-        const nested = [...item.children].filter((child) => ["UL", "OL"].includes(child.tagName)).map((child) => block(child, depth + 1).trim().replace(/^/gm, "  ")).join("\n");
-        return `${"  ".repeat(depth)}${marker} ${value}${nested ? `\n${nested}` : ""}`;
+        const indent = " ".repeat(marker.length + 1);
+        const [first, ...rest] = value.split("\n");
+        return [`${marker} ${first}`, ...rest.map((line) => line ? indent + line : "")].join("\n");
       }).filter(Boolean);
       return rows.length ? `${rows.join("\n")}\n\n` : "";
     }
-    const children = [...node.childNodes].map((child) => block(child, depth)).join("");
-    return ["ARTICLE", "ASIDE", "DIV", "FIGURE", "MAIN", "SECTION"].includes(tag) ? `${children.trim()}\n\n` : children;
+    if (["ARTICLE", "ASIDE", "DIV", "FIGURE", "MAIN", "SECTION"].includes(tag)) {
+      return `${blockChildren(node, context).trim()}\n\n`;
+    }
+    const children = [...node.childNodes].map((child) => block(child, depth, context)).join("");
+    return children;
   }
 
   function toMarkdown(root) {
-    return [...root.childNodes].map((node) => block(node)).join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    let codePrefix = "CONTENTCATCHERCODE";
+    const source = `${root.outerHTML}\n${root.textContent}`;
+    while (source.includes(codePrefix)) codePrefix += "X";
+    const context = { codePrefix, codeBlocks: [] };
+    let markdown = [...root.childNodes].map((node) => block(node, 0, context)).join("").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    for (const { marker, value } of context.codeBlocks) {
+      const index = markdown.indexOf(marker);
+      if (index < 0) continue;
+      const lineStart = markdown.lastIndexOf("\n", index) + 1;
+      const prefix = markdown.slice(lineStart, index);
+      const continuation = prefix.replace(/(^|[ \t>])([-+*]|\d+[.)])([ \t]+)/g, (_, before, listMarker, spacing) => before + " ".repeat(listMarker.length + spacing.length));
+      const expanded = value.replace(/\n/g, () => `\n${continuation}`);
+      markdown = markdown.slice(0, index) + expanded + markdown.slice(index + marker.length);
+    }
+    return markdown;
   }
 
-  function promoteVisualHeadings(markdown) {
-    let inFence = false;
-    return markdown.split("\n").map((line) => {
-      const value = line.trim();
-      if (value.startsWith("```")) {
-        inFence = !inFence;
-        return line;
-      }
-      if (inFence || !value || value.startsWith("#")) return line;
-      if (/^(前言|序言|结语|总结|参考资料)$/.test(value)) return `## ${value}`;
-      const subheading = value.match(/^\*\*(\d{1,2}\.\d{1,2}\s*[^*]{1,90})\*\*$/);
-      if (subheading) return `### ${subheading[1].replace(/^(\d+\.\d+)(?=\S)/, "$1 ")}`;
-      if (/^\d{1,2}\.\d{1,2}(?!\d)\s*\S.{0,90}$/.test(value)) {
-        return `### ${value.replace(/^(\d+\.\d+)(?=\S)/, "$1 ")}`;
-      }
-      if (/^\d{1,2}\.(?!\d)\s*\S.{0,90}$/.test(value)) {
-        return `## ${value.replace(/^(\d+\.)(?=\S)/, "$1 ")}`;
-      }
-      return line;
-    }).join("\n");
+  function visualHeadingLevel(node) {
+    if (node.tagName !== "SECTION" || node.parentElement?.closest("p,li,ol,ul,pre,code,blockquote,table")) return 0;
+    if ([...node.querySelectorAll("*")].some((child) => !["SPAN", "STRONG", "B", "EM", "I"].includes(child.tagName))) return 0;
+    const marked = Number(node.getAttribute(DIAGNOSTIC_HEADING_LEVEL));
+    if ([2, 3].includes(marked)) return marked;
+    const value = normalized(node);
+    if (!value || value.length > 90 || /[。！？.!?；;：:]$/.test(value)) return 0;
+    const subheading = value.match(/^(\d{1,2}\.\d{1,2})(?![\d.])\s*(\S.*?)$/);
+    const heading = subheading || value.match(/^(\d{1,2}\.)(?![\d.])\s*(\S.*?)$/);
+    if (!heading) return 0;
+    const children = [...node.childNodes].filter((child) => child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim());
+    const emphasized = children.length === 1 && ["STRONG", "B"].includes(children[0].tagName);
+    const chapter = /^第[一二三四五六七八九十百千万零〇\d]+[章节篇]/.test(heading[2]);
+    return emphasized || chapter ? subheading ? 3 : 2 : 0;
+  }
+
+  function promoteVisualHeadings(root) {
+    [...root.querySelectorAll("section")].forEach((node) => {
+      const level = visualHeadingLevel(node);
+      if (!level) return;
+      const heading = document.createElement(`h${level}`);
+      if (node.id) heading.id = node.id;
+      heading.textContent = normalized(node).replace(/^(\d{1,2}\.\d{1,2}|\d{1,2}\.)(?=\S)/, "$1 ");
+      node.replaceWith(heading);
+    });
   }
 
   try {
@@ -403,7 +545,7 @@
     const structured = jsonLd();
     const selection = findContentRoot();
     const rawContent = selection.node;
-    const content = clean(rawContent);
+    const { content, stages } = clean(rawContent);
     const text = normalized(content);
     if (text.length < 120) return { ok: false, error: "页面正文太短，可能不是文章页面或内容尚未加载。" };
     const beforeMetrics = contentMetrics(rawContent);
@@ -420,6 +562,7 @@
       selection,
       beforeMetrics,
       afterMetrics,
+      cleanupStages: stages,
       analysisReadiness,
       metadata: {
         fields: {
@@ -434,7 +577,8 @@
         }
       }
     });
-    let body = promoteVisualHeadings(toMarkdown(content));
+    adapter?.transform?.(content);
+    let body = toMarkdown(content);
     body = body.replace(new RegExp(`^#\\s+${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i"), "");
     const capturedAt = new Date().toISOString();
     const frontMatter = ["---", `title: ${JSON.stringify(title || "未命名文章")}`, author ? `author: ${JSON.stringify(author)}` : "", account && account !== author ? `account: ${JSON.stringify(account)}` : "", publishedAt ? `published: ${JSON.stringify(publishedAt)}` : "", `source: ${JSON.stringify(location.href)}`, `site: ${JSON.stringify(siteName)}`, `captured: ${JSON.stringify(capturedAt)}`, "---"].filter(Boolean).join("\n");

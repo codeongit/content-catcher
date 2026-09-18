@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><title>分阶段清理合成样例</title></head><body><article id="js_content">
+<p>这段人工编写的正文用于观察清理阶段的行为。正常段落、代码和最后一个真实段落必须保留，只有明确命中的页面组件才应移除。统计只描述清理前后的结构变化，不表示文章缺失了多少证据。这里增加足够长度，使尾部推广位于正文后半部分，并使文章满足通用选择和就绪提示的长度要求。</p>
+<p>合成材料不会使用真实网页内容。维护者需要能够区分结构删除、无效图片清理、广告类噪声和站点尾部截断，特别是父节点与其子节点同时命中时，不能重复计算已经移除的节点。代码中的注释只是正常内容，不能因为类名包含评论字样就删除。清理的最终结果应该保留所有这些正常的解释文字。</p>
+<p>这一段进一步延长正文，以确保每种站点行为可用同一个样例独立核对。在通用站点，末尾的文字不触发微信适配规则；在微信站点，识别到尾部推广后才进行截断。两者的差异必须在诊断统计中被清楚记录，而不能通过适配器函数存在与否来代替实际执行结果。</p>
+<script>PRIVATE_SCRIPT_PAYLOAD</script>
+<form><button>PRIVATE_FORM_PAYLOAD</button></form>
+<img alt="占位图片一"><img src="data:image/gif;base64,R0lGODlh" alt="占位图片二">
+<div class="advertisement"><span class="ad">PRIVATE_INNER_NOISE</span><span>PRIVATE_OUTER_NOISE</span></div>
+<aside class="sidebar-widget">PRIVATE_SIDEBAR_NOISE</aside>
+<section><strong>1.1章节标题</strong></section>
+<pre><code><span class="token comment">// retained annotation</span>
+keepBody();</code></pre>
+<p>最后一个真实段落必须保留。</p>
+<section><span>扫描下方二维码</span></section><img src="https://example.invalid/promotion.png"><p>点击阅读原文即可体验！</p>
+</article></body></html>
