@@ -3,6 +3,137 @@ import test from "node:test";
 import { ANALYSIS_PROMPT_VERSION, buildModelInput } from "../extension/analysis-prompt.js";
 import { buildEvidenceIndex } from "../extension/evidence-index.js";
 
+test("Insight changes prioritize mainline and never invent a reader's previous practice", () => {
+  for (const markdown of [
+    "## 合成主线\n\n旧手册重复保存规则，建议共享规则。附带说明工具可迁移。\n",
+    "## 合成解释\n\n本文提供分类框架，未描述读者此前如何判断。\n"
+  ]) {
+    const output = buildModelInput({ markdown });
+    const contract = output.split("<analysis_settings>")[0];
+    assert.match(contract, /优先选出主线中最值得读者带走的改变/);
+    assert.match(contract, /不优先选择容易举例的局部技巧或次要主张/);
+    assert.match(contract, /依据原文讲清原来怎样想或做、文章建议改变什么、为什么值得改变/);
+    assert.match(contract, /原文没有交代原有做法时，不虚构读者习惯/);
+    assert.match(contract, /标题和正文直接说清改变/);
+    assert.match(contract, /简短交代原文依据与关键适用边界，分析推导明确标记/);
+    assert.match(contract, /不固定所有文章都采用同一组决策/);
+    const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+    assert.deepEqual(index, buildEvidenceIndex(markdown));
+    assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+  }
+});
+
+test("Thesis-centered insights support changes in judgment without forcing action lists", () => {
+  for (const markdown of [
+    "## 合成主旨\n\n重点是分离共享规则与场景流程。别名设置只是局部例子。\n",
+    "## 合成框架\n\n本文区分两类判断依据，没有提出操作步骤。\n"
+  ]) {
+    const output = buildModelInput({ markdown });
+    const contract = output.split("<analysis_settings>")[0];
+    assert.match(contract, /先确定文章最想改变读者的什么认识或做法/);
+    assert.match(contract, /每条必须直接服务文章主旨/);
+    assert.match(contract, /具体行动和原文例子用于解释这项改变，不取代它/);
+    assert.match(contract, /可以说明它如何改变读者的判断，不强行编成操作清单/);
+    assert.match(contract, /简短交代原文依据与关键适用边界，分析推导明确标记/);
+    assert.match(contract, /例子必须来自原文，没有时不编造/);
+    assert.doesNotMatch(contract, /每条聚焦一个具体决策，说明适用情况、具体行动/);
+    const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+    assert.deepEqual(index, buildEvidenceIndex(markdown));
+    assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+  }
+});
+
+test("Mainline grouping keeps separate claim strength and evidence while concentrating shared gaps", () => {
+  const markdown = "## 合成方案\n\n共享规则可减少重复定义。作者进一步声称所有任务效率提高，未给对照结果；两个场景使用同一组案例。别名只是局部示例。\n";
+  const output = buildModelInput({ markdown });
+  const contract = output.split("<analysis_settings>")[0];
+  assert.match(contract, /围绕文章主线组织，不凑满条目/);
+  assert.match(contract, /保留各自主张的范围、条件和强度，不混用彼此的证据/);
+  assert.match(contract, /不得用更窄、更容易成立的命题替代/);
+  assert.match(contract, /共同证据缺口集中到第 4 部分/);
+  assert.match(contract, /只根据抓取上下文说明正文、图片、外链等抓取与访问限制/);
+  assert.match(contract, /按对文章主旨的影响排序/);
+  assert.match(contract, /重复的推导合并或删除/);
+  assert.match(contract, /必要的分析推导显式标记/);
+  assert.match(contract, /精简时保留会改变判断的重要条件与不确定性/);
+  const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+  assert.deepEqual(index, buildEvidenceIndex(markdown));
+  assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+});
+
+test("Standalone explanation instructions preserve examples, missing evidence and source boundaries", () => {
+  const materials = [
+    "## 方法\n\n先核对范围再操作。例如补齐日期后才重跑报表；效果尚未验证。\n",
+    "## 观点\n\n本文讨论规则的含义，没有提供案例或操作流程。\n"
+  ];
+  for (const markdown of materials) {
+    const output = buildModelInput({ markdown });
+    const contract = output.split("<analysis_settings>")[0];
+    assert.match(contract, /默认读者没有读过原文，分析应能独立读懂/);
+    assert.match(contract, /先用通俗语言讲清作者面对的问题、提出的做法及其运作过程，再评价证据与价值/);
+    assert.match(contract, /有合适的原文例子时，用它串起方法；没有时不编造/);
+    assert.match(contract, /不为非方法类文章强造操作流程/);
+    assert.match(contract, /必要术语在具体做法或含义之后引入/);
+    assert.match(contract, /先用具体行为、变化或通俗命题说明作者完整主张/);
+    assert.match(contract, /不得缩窄原主张/);
+    assert.match(contract, /不要访问、补全或假定图片、链接及缺失段落中的信息/);
+    assert.match(contract, /不因效果尚未证明而忽略有依据的设计价值/);
+    assert.match(contract, /偏好不能作为事实依据/);
+    const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+    assert.deepEqual(index, buildEvidenceIndex(markdown));
+    assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+  }
+});
+
+test("Core-decision selection reaches handoff without replacing evidence or user preferences", () => {
+  const markdown = "## 合成方法\n\n选择整体方案时需要考虑验证和维护；别名映射只是其中一个例子。\n";
+  for (const preferences of ["", "重点解释别名映射，简短一些。"]) {
+    const output = buildModelInput({ markdown }, { preferences });
+    const contract = output.split("<analysis_settings>")[0];
+    assert.match(contract, /先围绕文章的核心决策筛选重要内容，再展开证据评价/);
+    assert.match(contract, /不能因为某个例子容易写成具体行动，就把局部技巧提升为主要建议/);
+    assert.match(contract, /分别说明方法的设计价值与效果验证程度/);
+    assert.match(contract, /主张先行，依据紧跟/);
+    assert.match(contract, /新增推导只保留会改变读者理解或决策的内容/);
+    assert.match(contract, /不固定所有文章都采用同一组决策/);
+    assert.match(contract, /不得用更窄、更容易成立的命题替代/);
+    assert.match(contract, /偏好不能作为事实依据/);
+    assert.match(contract, /用户偏好只覆盖明确涉及的表达维度/);
+    const settings = JSON.parse(output.match(/<analysis_settings>\n([\s\S]*?)\n<\/analysis_settings>/)[1]);
+    assert.equal(settings.preferences, preferences);
+    const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+    assert.deepEqual(index, buildEvidenceIndex(markdown));
+    assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+  }
+});
+
+test("Readable references preserve evidence lookup for titled, untitled and repeated headings", () => {
+  const materials = [
+    "## 配置推送\n\n缺少权限限制。\n",
+    "规则甲适用于小样本；规则乙适用于大样本。\n",
+    "## 结果\n\n方案甲失败。\n\n## 结果\n\n方案乙成功。\n"
+  ];
+  // Verify handoff instructions and data, not an external model's output.
+  for (const markdown of materials) {
+    const output = buildModelInput({ markdown });
+    const contract = output.split("<analysis_settings>")[0];
+    assert.match(contract, /块编号和行号用于核对、回查原文/);
+    assert.match(contract, /默认用原文章节名配合必要短引文定位，不显示块编号或行号/);
+    assert.match(contract, /原文没有标题、标题重复或定位不清时，使用有辨识度的短引文/);
+    assert.match(contract, /仅在用户要求精确定位时附上编号或行号/);
+    assert.match(contract, /不得编造章节名/);
+    assert.doesNotMatch(contract, /原文块编号及必要短引文|作者完整主张 → 块编号/);
+    const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
+    assert.deepEqual(index, buildEvidenceIndex(markdown));
+    assert.equal(index[0].id, "B0001");
+    for (const block of index) {
+      const original = markdown.split("\n").slice(block.startLine - 1, block.endLine).join("\n");
+      assert.equal(block.excerpt, Array.from(original.trim()).slice(0, 48).join(""));
+    }
+    assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
+  }
+});
+
 test("Evidence prompt includes the analysis contract and capture context", () => {
   const markdown = "# 合成技术文章\n\n正文引用一项没有完整方法说明的测试。\n";
   const output = buildModelInput({
@@ -25,12 +156,12 @@ test("Evidence prompt includes the analysis contract and capture context", () =>
     }
   });
 
-  assert.equal(ANALYSIS_PROMPT_VERSION, "evidence-v4");
+  assert.equal(ANALYSIS_PROMPT_VERSION, "evidence-v10");
   assert.match(output, /重要结论必须同时与文章主旨相关、有具体依据/);
-  assert.match(output, /每条聚焦一个具体决策，说明适用情况、具体行动、作用原因、原文依据和风险边界/);
+  assert.match(output, /先确定文章最想改变读者的什么认识或做法/);
   assert.match(output, /## 2\. 核心主张与证据（最多 5 项）/);
   assert.match(output, /## 3\. 实用见解（最多 3 项）/);
-  assert.match(output, /"promptVersion": "evidence-v4"/);
+  assert.match(output, /"promptVersion": "evidence-v10"/);
   assert.match(output, /"textCharacters": 1280/);
   assert.match(output, /"imageReferences": 4/);
   assert.match(output, /"imagePixelsTranscribed": false/);
@@ -56,9 +187,9 @@ test("Plain-language defaults and per-dimension preference instructions coexist 
   assert.equal(defaultSettings.preferences, "", "built-in style must not be stored as a user preference");
   // These checks validate assembled instructions, not an external model's behavior.
   for (const prompt of [defaults, output]) {
-    assert.match(prompt, /默认表达：使用通俗中文、短段落或简短列表/);
-    assert.match(prompt, /必要术语首次出现时简短解释/);
-    assert.match(prompt, /简化语言时保留限定条件、数字口径和不确定性/);
+    assert.match(prompt, /使用短段落或简短列表/);
+    assert.match(prompt, /必要术语在具体做法或含义之后引入，首次出现时简短解释/);
+    assert.match(prompt, /保留限定条件、数字口径和不确定性/);
     assert.match(prompt, /用户偏好只覆盖明确涉及的表达维度/);
     assert.match(prompt, /未涉及的默认要求继续有效/);
     assert.match(prompt, /不取消短段落等其他默认要求，也不能取消证据约束/);
@@ -69,7 +200,7 @@ test("Plain-language defaults and per-dimension preference instructions coexist 
   assert.ok(output.endsWith(`<captured_content>\n${article.markdown}</captured_content>`));
 });
 
-test("Evidence v4 assembles decision-focused, type-specific and non-repetitive analysis instructions", () => {
+test("Evidence v10 assembles decision-focused, type-specific and non-repetitive analysis instructions", () => {
   const output = buildModelInput({ markdown: "合成材料没有给出外部验证。" });
   assert.match(output, /先说明文章帮助读者做什么决策、作者提供什么方法/);
   assert.match(output, /材料未明确决策时，说明它讨论的问题，不补造用途/);
@@ -84,9 +215,9 @@ test("Evidence v4 assembles decision-focused, type-specific and non-repetitive a
   assert.match(output, /不强制使用“强／中／弱”评级/);
   assert.match(output, /作者报告的结果不能写成已经独立核验的事实/);
   assert.match(output, /合并针对同一决策的重复建议，不固定所有文章都采用同一组决策/);
-  assert.match(output, /新增实施建议标为分析推导/);
+  assert.match(output, /分析推导明确标记/);
   assert.match(output, /不重复第 2 部分的详细论证/);
-  assert.match(output, /前文已说明的个别缺口不再逐条重复/);
+  assert.match(output, /样本和方法的证据缺口在前文评价，此处不再重复/);
 });
 
 test("Feedback handoff requires an explicit later request and never promises automatic synchronization", () => {
@@ -193,12 +324,12 @@ test("Evidence prompt keeps old article shapes and states claim-preservation lim
   assert.equal(context.extensionVersion, "unknown");
   assert.equal(context.capturedAt, "unknown");
   assert.deepEqual(context.cleanupStages, []);
-  assert.match(output, /作者完整主张 → 块编号及必要短引文 → 证据实际支持范围/);
+  assert.match(output, /作者完整主张及论证 → 可读的原文定位及必要短引文 → 证据实际支持范围/);
   assert.match(output, /不得用更窄、更容易成立的命题替代后提高评级/);
   assert.match(output, /不能仅凭短摘录判断/);
   assert.match(output, /不以缺少实验统一否定概念分析/);
   assert.match(output, /不等于正文缺失率/);
-  assert.match(output, /优先回答文章的核心决策/);
+  assert.match(output, /先围绕文章的核心决策筛选重要内容/);
   const empty = buildModelInput();
   assert.match(empty, /<evidence_index>\n\[\]\n<\/evidence_index>/);
   assert.ok(empty.endsWith("<captured_content>\n</captured_content>"));
