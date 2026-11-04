@@ -2,7 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-10-04
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：固定章节分工改为要点内解释与按需说明限制；主线筛选、不混用证据及共同限制只说一次继续有效。
 - Partially superseded by: [ADR-0018](0018-thesis-centered-insights.md) 的提示版本与实用见解要求；主线组织和证据边界继续有效。
+- Partially superseded by: [ADR-0020](0020-question-led-explanation.md) 的核心主张组织细节；主线筛选与共同缺口集中要求继续有效。
 - Partially supersedes: [ADR-0016](0016-standalone-readable-analysis.md) 的提示版本与章节组织；独立可读与证据边界继续有效。
 
 ## Context

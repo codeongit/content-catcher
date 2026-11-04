@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-04
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：不再单列第 3 部分，认识或做法的改变融入相关要点；主旨导向与证据边界继续有效。
 - Partially superseded by: [ADR-0019](0019-explicit-insight-changes.md) 的提示版本与见解选取表达；主旨导向和证据边界继续有效。
 - Partially supersedes: [ADR-0017](0017-mainline-analysis-and-shared-limitations.md) 的提示版本与实用见解要求；主线组织和证据边界继续有效。
 

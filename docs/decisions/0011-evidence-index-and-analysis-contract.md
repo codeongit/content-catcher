@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-18
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：默认五部分与固定内容栏目被精简；证据索引、完整主张、按类型核对及资料边界继续有效。
 - Extends: [ADR-0004](0004-redacted-diagnostics-and-synthetic-fixtures.md)、[ADR-0007](0007-advisory-analysis-readiness.md)
 - Partially supersedes: [ADR-0008](0008-evidence-grounded-model-handoff.md)、[ADR-0009](0009-conversational-feedback.md) 的模型交接版本、证据定位及支撑评价细节；其他产品与反馈边界保留。
 - Partially superseded by: [ADR-0012](0012-decision-oriented-plain-language-analysis.md)（2026-09-18）：分析契约升级为 `evidence-v4`，增加通俗表达默认与偏好按维度覆盖，细化决策导向、独立验证核对和非强制评级。证据索引、抓取上下文、原文保留及反馈边界继续有效。以下保留原决策正文。

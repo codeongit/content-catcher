@@ -2,6 +2,8 @@
 
 - Status: Accepted
 - Date: 2026-10-04
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：实用见解的固定栏目与重复表达要求被合并；重要改变、不虚构读者习惯与证据边界继续有效。
+- Partially superseded by: [ADR-0020](0020-question-led-explanation.md) 的提示版本；实用见解选取与证据边界继续有效。
 - Partially supersedes: [ADR-0018](0018-thesis-centered-insights.md) 的提示版本与见解选取表达；主旨导向和证据边界继续有效。
 
 ## Context

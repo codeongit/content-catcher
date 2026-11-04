@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-09-18
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：默认组织与重复表达要求被合并；偏好覆盖与证据核对边界继续有效。
 - Partially superseded by: [ADR-0014](0014-readable-evidence-references.md)：提示版本与回答引用表达；其余规则与边界继续有效。
 - Extends: [ADR-0009](0009-conversational-feedback.md)
 - Partially supersedes: [ADR-0011](0011-evidence-index-and-analysis-contract.md) 的分析提示版本、默认表达和证据评价细节；证据索引、抓取上下文、原文与反馈边界继续有效。

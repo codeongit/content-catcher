@@ -2,7 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-10-04
+- Partially superseded by: [ADR-0021](0021-concise-article-analysis.md)（2026-11-04）：五部分默认结构与表达组织被精简；独立可读、原文例子与关键条件继续有效。
 - Partially superseded by: [ADR-0017](0017-mainline-analysis-and-shared-limitations.md) 的提示版本与章节组织；独立可读与证据边界继续有效。
+- Partially superseded by: [ADR-0020](0020-question-led-explanation.md) 的默认表达细节；独立可读与证据边界继续有效。
 - Partially supersedes: [ADR-0015](0015-core-decision-prioritization.md) 的提示版本与默认表达组织；核心决策筛选与证据边界继续有效。
 
 ## Context
