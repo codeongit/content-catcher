@@ -137,7 +137,7 @@ test("Popup defaults to collapsed settings and preserves all article exports", a
     assert.match($("#feedbackHelp").textContent, /无法读取外部聊天或确认保存结果/);
 
     await click("#copyForAi");
-    assert.match(copied.at(-1), /"promptVersion": "evidence-v13"/);
+    assert.match(copied.at(-1), /"promptVersion": "evidence-v14"/);
     assert.deepEqual(copiedSettings(), promptSettings(DEFAULT_ANALYSIS_SETTINGS));
     assert.ok(copied.at(-1).endsWith(`<captured_content>\n${article.markdown}</captured_content>`));
     assert.equal(storage.entries.size, 0, "copy must not persist article or settings");

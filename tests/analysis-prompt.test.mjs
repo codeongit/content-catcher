@@ -4,7 +4,7 @@ import { ANALYSIS_PROMPT_VERSION, buildModelInput } from "../extension/analysis-
 import { buildEvidenceIndex } from "../extension/evidence-index.js";
 
 // These tests validate assembled handoff instructions and data, not model output quality.
-test("Concise defaults explain the mainline with a thesis and a few grounded points", () => {
+test("Defaults explain the article's core logic and takeaways without a fixed point count", () => {
   for (const markdown of [
     "## 合成方法\n\n共享规则可减少重复定义。例如两份手册引用同一规则；整体效率未验证。别名设置只是局部示例。\n",
     "## 合成观点\n\n本文区分两类判断依据，没有案例、操作步骤或读者原有习惯描述。\n"
@@ -14,19 +14,24 @@ test("Concise defaults explain the mainline with a thesis and a few grounded poi
     assert.ok(contract.startsWith("请用通俗中文"), "the short reading task comes first");
     assert.ok(contract.indexOf("核对规则（") < contract.indexOf("后续交接（"));
     assert.match(contract, /通俗中文.*讲给没读过的人听/);
-    assert.match(contract, /先用一句话说清主旨，再写 2–3 个要点，不凑数/);
-    assert.match(contract, /加粗短句直接说内容.*讲清原因或做法.*原文的关键依据/);
-    assert.match(contract, /只讲主线，按作者的核心论证组织要点.*保留问题、解释和结论之间的重要联系.*不固定套用某一种结构/);
-    assert.match(contract, /每个要点围绕一个中心判断，只保留讲清它所需的内容.*不为了容纳全部章节而把多个主题塞进同一点/);
+    assert.match(contract, /重点回答：核心逻辑是什么，有什么可以借鉴/);
+    assert.match(contract, /先用一句话概括文章的核心判断.*按原文实际的因果、递进、对比或并列关系展开/);
+    assert.match(contract, /关键观点或环节为什么提出、彼此有什么关系、作者最终得出什么结论/);
+    assert.match(contract, /不要只罗列章节或做法.*不把局部亮点当成全文主旨/);
+    assert.match(contract, /可用编号串起逻辑链.*复杂环节可分组说明.*没有先后关系时不要硬排成流程/);
+    assert.match(contract, /加粗短句直接说内容.*解释必要的原因、做法和原文依据/);
+    assert.match(contract, /条目数量和篇幅以讲清主线为准.*删去旁支与重复.*不为压缩而省略关键联系/);
+    assert.match(contract, /值得借鉴的认识或做法.*适用情况、具体可借鉴什么及原因.*避免再复述一遍摘要/);
+    assert.match(contract, /可在讲清核心逻辑后单独列出，也可在相关解释中讲清；不凑数/);
     assert.match(contract, /用日常语言，必要术语顺手解释.*有合适的原文例子时，用它说明抽象机制/);
-    assert.match(contract, /把依据、必要限制和值得带走的认识或做法自然融入解释.*不固定重复“原文依据”“值得带走”等标签/);
+    assert.match(contract, /依据和必要限制自然融入解释，不逐项重复固定标签/);
     assert.match(contract, /不强编操作步骤或读者原有习惯/);
     assert.match(contract, /保留作者原意和关键条件，明确标记你的推断/);
     assert.match(contract, /证据缺口和抓取限制随相关结论说明，共同限制只说一次/);
     assert.match(contract, /材料不足以判断主旨时直说，不补造/);
     assert.match(contract, /核对规则（用于分析，不作为固定输出栏目）/);
     assert.match(contract, /后续交接（不作为分析输出栏目）/);
-    assert.doesNotMatch(contract, /以下五部分|## [1-5]\.|第 [1-5] 部分/);
+    assert.doesNotMatch(contract, /2[–—-]3 个要点|以下五部分|## [1-5]\.|第 [1-5] 部分/);
     const index = JSON.parse(output.match(/<evidence_index>\n([\s\S]*?)\n<\/evidence_index>/)[1]);
     assert.deepEqual(index, buildEvidenceIndex(markdown));
     assert.ok(output.endsWith(`<captured_content>\n${markdown}</captured_content>`));
@@ -104,8 +109,8 @@ test("Evidence prompt includes the analysis contract and capture context", () =>
     }
   });
 
-  assert.equal(ANALYSIS_PROMPT_VERSION, "evidence-v13");
-  assert.match(output, /"promptVersion": "evidence-v13"/);
+  assert.equal(ANALYSIS_PROMPT_VERSION, "evidence-v14");
+  assert.match(output, /"promptVersion": "evidence-v14"/);
   assert.match(output, /"textCharacters": 1280/);
   assert.match(output, /"imageReferences": 4/);
   assert.match(output, /"imagePixelsTranscribed": false/);

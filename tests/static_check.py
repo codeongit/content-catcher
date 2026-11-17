@@ -50,7 +50,7 @@ def main():
 
     analysis_prompt = (EXTENSION / "analysis-prompt.js").read_text()
     for marker in [
-        'ANALYSIS_PROMPT_VERSION = "evidence-v13"',
+        'ANALYSIS_PROMPT_VERSION = "evidence-v14"',
         "buildModelInput",
         "<capture_context>",
         "<evidence_index>",

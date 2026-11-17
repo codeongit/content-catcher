@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-04
+- Partially superseded by: [ADR-0023](0023-core-logic-and-takeaways.md)（2026-11-16）：固定 2–3 个要点及借鉴内容仅融入要点的安排，改为按核心逻辑展开、条目数量随内容调整，借鉴内容可单列或融入；证据、偏好与安全边界继续有效。
 - Partially superseded by: [ADR-0022](0022-focused-article-points.md) 的提示版本与要点组织细化；一句话主旨、2–3 个要点及证据和安全边界继续有效。
 - Partially supersedes: [ADR-0020](0020-question-led-explanation.md) 的提示版本与默认组织，以及 [ADR-0009](0009-conversational-feedback.md)、[ADR-0011](0011-evidence-index-and-analysis-contract.md)、[ADR-0012](0012-decision-oriented-plain-language-analysis.md)、[ADR-0016](0016-standalone-readable-analysis.md)、[ADR-0017](0017-mainline-analysis-and-shared-limitations.md)、[ADR-0018](0018-thesis-centered-insights.md)、[ADR-0019](0019-explicit-insight-changes.md) 中的五部分结构、固定章节分工和重复表达要求；完整主张、证据核对、偏好与安全边界继续有效。
 

@@ -2,6 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-11-04
+- Partially superseded by: [ADR-0023](0023-core-logic-and-takeaways.md)（2026-11-16）：提示版本、固定 2–3 个要点及借鉴内容的组织方式；保留核心论证、原文依据、关键条件和安全边界。
 - Partially supersedes: [ADR-0021](0021-concise-article-analysis.md) 的提示版本与要点组织措辞；一句话主旨、2–3 个要点及证据和安全边界继续有效。
 
 ## Context
